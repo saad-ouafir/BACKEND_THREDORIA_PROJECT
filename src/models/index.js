@@ -6,7 +6,7 @@ const RefreshToken = require("./auth/refreshToken.model")(sequelize);
 const Thread = require("./content/thread.model")(sequelize);
 const Media = require("./content/media.model")(sequelize);
 const Follow = require("./social/follow.model")(sequelize);
-const Reaction = require("./social/reaction.model")(sequelize);
+const Reaction = require("./content/reaction.model")(sequelize);
 const Notification = require("./social/notification.model")(sequelize);
 
 const models = {
