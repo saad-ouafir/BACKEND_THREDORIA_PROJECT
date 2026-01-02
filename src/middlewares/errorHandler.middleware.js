@@ -1,3 +1,5 @@
+const fs = require("fs");
+const { dirname } = require("path");
 class ErrorHandler {
   static handleAsync(fn) {
     return (req, res, next) => {
@@ -6,6 +8,7 @@ class ErrorHandler {
   }
 
   static globalErrorHandler = (error, req, res, next) => {
+    console.log(error);
     // Sequelize errors
     if (error.name === "SequelizeUniqueConstraintError") {
       return res.status(409).json({

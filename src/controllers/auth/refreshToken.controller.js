@@ -6,7 +6,7 @@ const { v4: uuidv4 } = require("uuid");
 
 class RefreshTokenController {
   static async generateAccessToken(userId) {
-    const accessToken = jwt.sign({ userId }, JWT_SECRET, {
+    const accessToken = await jwt.sign({ userId }, JWT_SECRET, {
       expiresIn: "30m",
     });
     return accessToken;
@@ -14,8 +14,7 @@ class RefreshTokenController {
 
   static async generateRefreshToken(userId) {
     const token = uuidv4();
-    const salt = await bcrypt.genSalt(10);
-    const tokenHash = await bcrypt.hash(token, salt);
+    const tokenHash = await bcrypt.hash(token, 10);
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
 
     await RefreshToken.create({
