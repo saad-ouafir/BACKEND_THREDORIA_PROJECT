@@ -9,6 +9,10 @@ module.exports = (sequelize) => {
         primaryKey: true,
         autoIncrement: true,
       },
+      full_name: {
+        type: DataTypes.STRING(100),
+        allowNull: false,
+      },
       username: {
         type: DataTypes.STRING(50),
         allowNull: false,
@@ -31,26 +35,37 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING(500),
         allowNull: true,
       },
-      profile_picture_cdn: {
-        type: DataTypes.STRING(100),
+      profile_metadata: {
+        type: DataTypes.JSON,
         allowNull: true,
-      },
-      profile_picture_provider: {
-        type: DataTypes.STRING(100),
-        allowNull: true,
+        comment: "Flexible storage for CDN, provider, and dimensions",
       },
       bio: {
-        type: DataTypes.TEXT,
+        type: DataTypes.STRING(160),
         allowNull: true,
       },
+      follower_count: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
+      following_count: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
       created_at: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
+      updated_at: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
       },
     },
     {
       tableName: "users",
-      timestamps: false,
+      timestamps: true,
+      createdAt: "created_at",
+      updatedAt: "updated_at",
       indexes: [
         {
           unique: true,

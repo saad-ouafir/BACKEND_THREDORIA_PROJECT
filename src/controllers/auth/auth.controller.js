@@ -8,23 +8,23 @@ class UserController {
     const {
       email,
       username,
+      full_name,
       password,
       is_private,
       profile_picture_url,
-      profile_picture_cdn,
-      profile_picture_provider,
+      profile_metadata,
       bio,
     } = req.body;
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({
+      full_name,
       username,
       email,
       password_hash: hashedPassword,
       is_private: is_private || false,
       profile_picture_url: profile_picture_url || null,
-      profile_picture_cdn: profile_picture_cdn || null,
-      profile_picture_provider: profile_picture_provider || null,
+      profile_metadata: profile_metadata || null,
       bio: bio || null,
     });
 
@@ -35,17 +35,38 @@ class UserController {
       user.id
     );
 
+    // Set refresh token as HTTP-only cookie
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    });
+
     return res.status(201).json({
       message: "User registered successfully",
-      user,
+      user: {
+        id: user.id,
+        full_name: user.full_name,
+        username: user.username,
+        email: user.email,
+        is_private: user.is_private,
+        profile_picture_url: user.profile_picture_url,
+        profile_metadata: user.profile_metadata,
+        bio: user.bio,
+        follower_count: user.follower_count,
+        following_count: user.following_count,
+      },
       accessToken,
-      refreshToken,
     });
   }
 
   static async login(req, res) {
     const { email, password } = req.body;
     const user = await findUser(req, res, email, "Invalid mail or password !");
+    if (!user || res.headersSent) {
+      return null;
+    }
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
       return res.status(401).json({
@@ -61,22 +82,55 @@ class UserController {
       user.id
     );
 
+    // Set refresh token as HTTP-only cookie
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    });
+
     return res.status(200).json({
       message: "Login successful",
-      user,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+      },
       accessToken,
-      refreshToken,
     });
   }
 
   static async logout(req, res) {
-    const { id } = req.params;
-    await RefreshTokenController.deleteRefreshTokens(id);
+    const { refreshToken } = req.cookies;
+
+    if (refreshToken) {
+      // Find and delete the refresh token from database
+      const tokenData = await RefreshTokenController.validateRefreshToken(
+        refreshToken
+      );
+      if (tokenData) {
+        await RefreshTokenController.deleteRefreshTokens(tokenData.user_id);
+      }
+    }
+
+    // Clear the HTTP-only cookie
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
+
     return res.status(200).json({ message: "Logged out successfully" });
   }
 
   static async refresh(req, res) {
-    const { refreshToken } = req.body;
+    const { refreshToken } = req.cookies;
+
+    if (!refreshToken) {
+      return res.status(401).json({ message: "Refresh token not found" });
+    }
+
     const tokenData = await RefreshTokenController.validateRefreshToken(
       refreshToken
     );
@@ -90,11 +144,17 @@ class UserController {
     }
 
     const newAccessToken = await RefreshTokenController.generateAccessToken(
-      user.id,
-      user.email
+      user.id
     );
 
-    return res.status(200).json({ accessToken: newAccessToken });
+    return res.status(200).json({
+      accessToken: newAccessToken,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+      },
+    });
   }
 
   static async resetPassword(req, res) {
@@ -109,21 +169,21 @@ class UserController {
     const {
       email,
       username,
+      full_name,
       is_private,
       profile_picture_url,
-      profile_picture_cdn,
-      profile_picture_provider,
+      profile_metadata,
       bio,
     } = req.body;
     await findUser(req, res, email);
     const user = await User.update(
       {
         username,
+        full_name,
         email,
         is_private: is_private || false,
         profile_picture_url: profile_picture_url || null,
-        profile_picture_cdn: profile_picture_cdn || null,
-        profile_picture_provider: profile_picture_provider || null,
+        profile_metadata: profile_metadata || null,
         bio: bio || null,
       },
       { where: { email: email } }

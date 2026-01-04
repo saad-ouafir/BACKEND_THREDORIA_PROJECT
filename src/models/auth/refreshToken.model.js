@@ -34,6 +34,11 @@ module.exports = (sequelize) => {
     {
       tableName: "refresh_tokens",
       timestamps: false,
+      indexes: [
+        {
+          fields: ["expires_at"],
+        },
+      ],
     }
   );
 

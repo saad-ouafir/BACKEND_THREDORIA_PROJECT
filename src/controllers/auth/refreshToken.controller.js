@@ -6,7 +6,7 @@ const { v4: uuidv4 } = require("uuid");
 
 class RefreshTokenController {
   static async generateAccessToken(userId) {
-    const accessToken = await jwt.sign({ userId }, JWT_SECRET, {
+    const accessToken = jwt.sign({ userId }, JWT_SECRET, {
       expiresIn: "30m",
     });
     return accessToken;
@@ -14,7 +14,7 @@ class RefreshTokenController {
 
   static async generateRefreshToken(userId) {
     const token = uuidv4();
-    const tokenHash = await bcrypt.hash(token, 10);
+    const tokenHash = await bcrypt.hash(token, 12);
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
 
     await RefreshToken.create({
@@ -28,11 +28,15 @@ class RefreshTokenController {
 
   static async validateRefreshToken(token) {
     const refreshTokens = await RefreshToken.findAll({
-      where: { user_id: userId },
+      where: {
+        expires_at: {
+          [require("sequelize").Op.gt]: new Date(),
+        },
+      },
     });
     for (const refreshToken of refreshTokens) {
       let isValid = await bcrypt.compare(token, refreshToken.token_hash);
-      if (isValid && refreshToken.expires_at > new Date()) {
+      if (isValid) {
         return refreshToken;
       }
     }

@@ -26,17 +26,10 @@ module.exports = (sequelize) => {
         type: DataTypes.ENUM("IMAGE", "VIDEO"),
         allowNull: false,
       },
-      cdn_provider: {
-        type: DataTypes.STRING(100),
+      metadata: {
+        type: DataTypes.JSON,
         allowNull: true,
-      },
-      cloud_region: {
-        type: DataTypes.STRING(50),
-        allowNull: true,
-      },
-      storage_provider: {
-        type: DataTypes.STRING(100),
-        allowNull: true,
+        comment: "Store CDN provider, width, height, etc.",
       },
       created_at: {
         type: DataTypes.DATE,
@@ -49,6 +42,7 @@ module.exports = (sequelize) => {
       indexes: [
         {
           fields: ["thread_id"],
+          name: "idx_thread_media",
         },
       ],
     }

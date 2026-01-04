@@ -17,9 +17,6 @@ router.get(
   })
 );
 
-router.get("/logout/:id", ErrorHandler.handleAsync(UserController.logout));
-router.post("/refresh", ErrorHandler.handleAsync(UserController.refresh));
-
 router.delete("/delete/:id", ErrorHandler.handleAsync(UserController.delete));
 
 module.exports = router;

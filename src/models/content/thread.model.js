@@ -18,10 +18,6 @@ module.exports = (sequelize) => {
         },
         onDelete: "CASCADE",
       },
-      content: {
-        type: DataTypes.TEXT,
-        allowNull: false,
-      },
       parent_id: {
         type: DataTypes.BIGINT,
         allowNull: true,
@@ -29,19 +25,42 @@ module.exports = (sequelize) => {
           model: "threads",
           key: "id",
         },
-        onDelete: "CASCADE",
+        onDelete: "SET NULL",
+      },
+      content: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      replies_count: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
+      likes_count: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+      },
+      shares_count: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
       },
       created_at: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
       },
+      deleted_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: "Soft delete to preserve reply chains",
+      },
     },
     {
       tableName: "threads",
       timestamps: false,
+      paranoid: false, // We handle soft delete manually with deleted_at
       indexes: [
         {
-          fields: ["author_id", "created_at"],
+          fields: ["author_id", { attribute: "created_at", order: "DESC" }],
+          name: "idx_author_created",
         },
         {
           fields: ["parent_id"],
@@ -59,6 +78,12 @@ module.exports = (sequelize) => {
       as: "reactions",
     });
     Thread.hasMany(models.Media, { foreignKey: "thread_id", as: "media" });
+    Thread.belongsToMany(models.Tag, {
+      through: models.ThreadTag,
+      foreignKey: "thread_id",
+      otherKey: "tag_id",
+      as: "tags",
+    });
   };
 
   return Thread;

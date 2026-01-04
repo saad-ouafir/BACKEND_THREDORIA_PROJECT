@@ -28,7 +28,7 @@ module.exports = (sequelize) => {
         onDelete: "CASCADE",
       },
       type: {
-        type: DataTypes.ENUM("LIKE", "REPOST"),
+        type: DataTypes.ENUM("LIKE", "SHARE"),
         allowNull: false,
       },
       created_at: {
@@ -43,9 +43,11 @@ module.exports = (sequelize) => {
         {
           unique: true,
           fields: ["user_id", "thread_id", "type"],
+          name: "uk_user_thread_type",
         },
         {
           fields: ["thread_id"],
+          name: "idx_thread_reactions",
         },
       ],
     }

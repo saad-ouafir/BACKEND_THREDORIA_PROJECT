@@ -2,6 +2,9 @@ const express = require("express");
 const server = express();
 const routes = require("./routers/index");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const morgan = require("morgan");
+const { apiLimiter } = require("./middlewares/rateLimit.middleware");
 
 const { APP_PORT } = require("./config/config") || 5000;
 const { connectDataBase } = require("./config/database");
@@ -12,12 +15,18 @@ server.listen(APP_PORT, () => {
 
 connectDataBase();
 server.use(express.json());
+server.use(cookieParser());
 server.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
     credentials: true,
   })
 );
+
+server.use(morgan("dev"));
+
+// Apply general rate limiting to all API routes
+server.use("/api/", apiLimiter);
 
 // Public routes (without Auth)
 server.use("/api/auth", routes.authRoutes);

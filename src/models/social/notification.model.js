@@ -27,14 +27,13 @@ module.exports = (sequelize) => {
         },
         onDelete: "CASCADE",
       },
+      target_id: {
+        type: DataTypes.BIGINT,
+        allowNull: false,
+        comment: "Context: points to the thread, reaction, or follow record",
+      },
       type: {
-        type: DataTypes.ENUM(
-          "REPLY",
-          "FOLLOW_REQUEST",
-          "FOLLOW_ACCEPT",
-          "LIKE",
-          "REPOST"
-        ),
+        type: DataTypes.ENUM("REPLY", "FOLLOW_REQUEST", "FOLLOW_ACCEPT", "LIKE"),
         allowNull: false,
       },
       is_read: {
@@ -52,6 +51,7 @@ module.exports = (sequelize) => {
       indexes: [
         {
           fields: ["recipient_id", "is_read"],
+          name: "idx_recipient_unread",
         },
       ],
     }
