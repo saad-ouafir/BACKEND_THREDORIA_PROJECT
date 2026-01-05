@@ -38,6 +38,9 @@ module.exports = (sequelize) => {
         {
           fields: ["expires_at"],
         },
+        {
+          fields: ["token_hash"],
+        },
       ],
     }
   );

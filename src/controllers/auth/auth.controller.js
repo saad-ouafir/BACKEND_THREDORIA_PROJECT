@@ -18,8 +18,8 @@ class UserController {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({
-      full_name,
       username,
+      full_name,
       email,
       password_hash: hashedPassword,
       is_private: is_private || false,
@@ -28,9 +28,7 @@ class UserController {
       bio: bio || null,
     });
 
-    const accessToken = await RefreshTokenController.generateAccessToken(
-      user.id
-    );
+    const accessToken = RefreshTokenController.generateAccessToken(user.id);
     const refreshToken = await RefreshTokenController.generateRefreshToken(
       user.id
     );
@@ -65,7 +63,7 @@ class UserController {
     const { email, password } = req.body;
     const user = await findUser(req, res, email, "Invalid mail or password !");
     if (!user || res.headersSent) {
-      return null;
+      return;
     }
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
@@ -74,9 +72,7 @@ class UserController {
       });
     }
 
-    const accessToken = await RefreshTokenController.generateAccessToken(
-      user.id
-    );
+    const accessToken = RefreshTokenController.generateAccessToken(user.id);
 
     const refreshToken = await RefreshTokenController.generateRefreshToken(
       user.id
@@ -143,9 +139,7 @@ class UserController {
       return res.status(401).json({ message: "User not found" });
     }
 
-    const newAccessToken = await RefreshTokenController.generateAccessToken(
-      user.id
-    );
+    const newAccessToken = RefreshTokenController.generateAccessToken(user.id);
 
     return res.status(200).json({
       accessToken: newAccessToken,
