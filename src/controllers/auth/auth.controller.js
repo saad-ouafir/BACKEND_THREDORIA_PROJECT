@@ -94,8 +94,16 @@ class UserController {
       message: "Login successful",
       user: {
         id: user.id,
+        full_name: user.full_name,
         username: user.username,
         email: user.email,
+        is_private: user.is_private,
+        profile_picture_url: user.profile_picture_url,
+        profile_metadata: user.profile_metadata,
+        bio: user.bio,
+        follower_count: user.follower_count,
+        following_count: user.following_count,
+        createdAt: user.createdAt
       },
       accessToken,
     });
@@ -151,8 +159,15 @@ class UserController {
       accessToken: newAccessToken,
       user: {
         id: user.id,
+        full_name: user.full_name,
         username: user.username,
         email: user.email,
+        is_private: user.is_private,
+        profile_picture_url: user.profile_picture_url,
+        profile_metadata: user.profile_metadata,
+        bio: user.bio,
+        follower_count: user.follower_count,
+        following_count: user.following_count,
       },
     });
   }
