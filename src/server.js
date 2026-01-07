@@ -15,6 +15,8 @@ server.listen(APP_PORT, () => {
 
 connectDataBase();
 server.use(express.json());
+
+server.use(express.urlencoded({ extended: true }));
 server.use(cookieParser());
 server.use(
   cors({
@@ -26,12 +28,6 @@ server.use(
 server.use(morgan("dev"));
 
 // Apply general rate limiting to all API routes
-server.use("/api/", apiLimiter);
-
-// Public routes (without Auth)
-server.use("/api/auth", routes.authRoutes);
-
-// Protected routes (with Auth)
-server.use("/api/auth", routes.protectedRoutes);
+server.use("/api", apiLimiter, routes);
 
 module.exports = server;

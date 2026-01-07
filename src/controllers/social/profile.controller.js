@@ -1,20 +1,105 @@
-const { where } = require("sequelize");
-const { User } = require("../../models/index");
-import { findUser } from "../../utils/findUser";
+const { where, Op, Sequelize } = require("sequelize");
+const { User, Follow, Thread } = require("../../models/index");
+const { findUser } = require("../../utils/findUser");
 
 class ProfileController {
-  static async getProfiles(req, res) {
-    const users = await User.findAll();
-    return res.status(200).json({ users });
+  static async suggestProfiles(req, res) {
+    const { limit = 10, cursor, exclude } = req.query;
+    const excludeIds = exclude ? exclude.split(",").map(Number) : [];
+    const currentUserId = req.user?.id;
+
+    if (currentUserId) excludeIds.push(currentUserId);
+
+    const whereClause = {
+      is_private: false,
+      ...(excludeIds.length && { id: { [Op.notIn]: excludeIds } }),
+      ...(cursor && { id: { [Op.lt]: cursor, ...(excludeIds.length && { [Op.notIn]: excludeIds }) } }),
+    };
+
+    const users = await User.findAll({
+      where: whereClause,
+      limit: parseInt(limit),
+      order: [["id", "DESC"]],
+      attributes: ["id", "full_name", "username", "profile_picture_url", "bio", "follower_count", "following_count", "created_at"],
+    });
+
+    const nextCursor = users.length === parseInt(limit) ? users[users.length - 1].id : null;
+
+    return res.status(200).json({
+      users: users.map((u) => ({
+        id: u.id,
+        name: u.full_name,
+        username: u.username,
+        avatar: u.profile_picture_url,
+        bio: u.bio,
+        followers: u.follower_count,
+        following: u.following_count,
+        joined: u.created_at,
+      })),
+      nextCursor,
+      hasMore: !!nextCursor,
+    });
   }
 
+  // Get profile by ID
   static async getProfilebyID(req, res) {
     const { id } = req.params;
-    const user = await findUser(req, res, id);
-    // if(user.is_private)===true{
-    // Private Account Logic Here
-    // }
-    return res.status(200).json({ user });
+    const user = await User.findByPk(id, {
+      attributes: { exclude: ["password_hash", "email"] },
+      include: [
+        {
+          model: Thread,
+          as: "threads",
+          limit: 10,
+          order: [["created_at", "DESC"]],
+        },
+      ],
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if profile is private and not the owner
+    if (user.is_private && (!req.user || req.user.id !== parseInt(id))) {
+      return res.status(403).json({
+        message: "This profile is private",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Profile fetched successfully",
+      user: {
+        id: user.id,
+        name: user.full_name,
+        username: user.username,
+        avatar: user.profile_picture_url,
+        bio: user.bio,
+        followers: user.follower_count,
+        following: user.following_count,
+        joined: user.created_at,
+      },
+    });
+  }
+
+  // Search profiles
+  static async searchProfiles(req, res) {
+    const { q, limit = 10, offset = 0 } = req.query;
+    const users = await User.findAll({
+      where: {
+        is_private: false,
+        [Op.or]: [{ full_name: { [Op.like]: `%${q}%` } }, { username: { [Op.like]: `%${q}%` } }],
+      },
+      limit: Number(limit),
+      offset: Number(offset),
+      order: [["follower_count", "DESC"]],
+      attributes: ["id", "full_name", "username", "profile_picture_url", "bio", "follower_count", "following_count"],
+    });
+
+    return res.status(200).json({
+      message: "Profiles fetched successfully",
+      users,
+    });
   }
 }
 

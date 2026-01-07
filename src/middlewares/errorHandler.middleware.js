@@ -1,10 +1,16 @@
-const fs = require("fs");
-const { dirname } = require("path");
 class ErrorHandler {
   static handleAsync(fn) {
     return (req, res, next) => {
       Promise.resolve(fn(req, res, next)).catch(next);
     };
+  }
+
+  static wrapController(controller) {
+    return Object.fromEntries(
+      Object.getOwnPropertyNames(controller)
+        .filter((method) => typeof controller[method] === "function")
+        .map((method) => [method, ErrorHandler.handleAsync(controller[method].bind(controller))])
+    );
   }
 
   static globalErrorHandler = (error, req, res, next) => {
@@ -22,19 +28,9 @@ class ErrorHandler {
       });
     }
 
-    // Handle JWT errors
-    if (
-      error.name === "JsonWebTokenError" ||
-      error.name === "TokenExpiredError"
-    ) {
-      return res.status(401).json({
-        error: "Authentication error",
-      });
-    }
-
     if (error.name === "SequelizeValidationError") {
       return res.status(400).json({
-        message: error.errors[0].message,
+        message: "Data validation error",
       });
     }
 
@@ -44,6 +40,7 @@ class ErrorHandler {
     });
   };
 
+  // Undefined route
   static notFoundHandler = (req, res) => {
     return res.status(404).json({
       message: "Undefined Route !",

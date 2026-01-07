@@ -1,6 +1,14 @@
+const express = require("express");
+const router = express.Router();
+const { checkBlock } = require("../middlewares/rateLimit.middleware");
+
 const routes = {
   authRoutes: require("./auth/auth.routes"),
-  protectedRoutes: require("./auth/protected.routes"),
+  profileRoutes: require("./social/profile.routes"),
 };
 
-module.exports = routes;
+router.use(checkBlock);
+router.use("/auth", routes.authRoutes);
+router.use("/profile", routes.profileRoutes);
+
+module.exports = router;

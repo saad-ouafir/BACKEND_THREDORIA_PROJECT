@@ -3,12 +3,11 @@ const { User } = require("../models/index");
 
 const findUser = async (req, res, param, message) => {
   const user = await User.findOne({
-    where: { [Op.or]: { id: param, email: param } },
+    where: { [Op.or]: { id: param, email: param, username: param } },
   });
   if (!user) {
-    return res
-      .status(401)
-      .json({ message: message || "User does not exist !" });
+    res.status(401).json({ message: message || "User does not exist !" });
+    return;
   }
   return user;
 };
