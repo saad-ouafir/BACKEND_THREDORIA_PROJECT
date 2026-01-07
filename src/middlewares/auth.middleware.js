@@ -7,16 +7,12 @@ class AuthMiddleware {
     const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
 
     if (!token) {
-      const error = new Error("Access token required");
-      error.status = 401;
-      return next(error);
+      return res.status(401).json({ message: "Access token required" });
     }
 
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
       if (err) {
-        const error = new Error("Invalid or expired token");
-        error.status = 401;
-        return next(error);
+      return res.status(401).json({ message: "Invalid or expired token" });
       }
 
       req.user = decoded;
@@ -46,9 +42,7 @@ class AuthMiddleware {
 
   static requireAuth = (req, res, next) => {
     if (!req.user) {
-      const error = new Error("Authentication required");
-      error.status = 401;
-      return next(error);
+     return res.status(401).json({ message: "Authentication required" });
     }
     next();
   };
@@ -64,9 +58,7 @@ class AuthMiddleware {
       });
 
       if (!user) {
-        const error = new Error("User not found");
-        error.status = 401;
-        return next(error);
+        return res.status(401).json({ message: "User not found" });
       }
 
       req.currentUser = user;
@@ -79,9 +71,7 @@ class AuthMiddleware {
   static authorize = (...roles) => {
     return (req, res, next) => {
       if (!req.currentUser) {
-        const error = new Error("Authentication required");
-        error.status = 401;
-        return next(error);
+       return res.status(401).json({ message: "Authentication required" });
       }
 
       // Add role-based authorization if needed in the future

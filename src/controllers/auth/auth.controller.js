@@ -54,6 +54,7 @@ class UserController {
         bio: user.bio,
         follower_count: user.follower_count,
         following_count: user.following_count,
+        created_at: user.created_at,
       },
       accessToken,
     });
@@ -99,7 +100,8 @@ class UserController {
         bio: user.bio,
         follower_count: user.follower_count,
         following_count: user.following_count,
-        createdAt: user.createdAt
+        created_at: user.created_at,
+        createdAt: user.createdAt,
       },
       accessToken,
     });
@@ -162,6 +164,7 @@ class UserController {
         bio: user.bio,
         follower_count: user.follower_count,
         following_count: user.following_count,
+        created_at: user.created_at,
       },
     });
   }
@@ -175,6 +178,7 @@ class UserController {
   }
 
   static async update(req, res) {
+    const { id } = req.params;
     const {
       email,
       username,
@@ -184,20 +188,65 @@ class UserController {
       profile_metadata,
       bio,
     } = req.body;
-    await findUser(req, res, email);
-    const user = await User.update(
+    
+    // Check if user exists using findUser utility
+    const user = await findUser(req, res, id, "User not found");
+    if (!user || res.headersSent) {
+      return;
+    }
+    
+    // Check if email is being changed and if it's already taken
+    if (email && email !== user.email) {
+      const emailExists = await User.findOne({ where: { email } });
+      if (emailExists) {
+        return res.status(400).json({ message: "Email is already taken" });
+      }
+    }
+
+    // Check if username is being changed and if it's already taken
+    if (username && username !== user.username) {
+      const usernameExists = await User.findOne({ where: { username } });
+      if (usernameExists) {
+        return res.status(400).json({ message: "Username is already taken" });
+      }
+    }
+
+    const [updatedRowsCount] = await User.update(
       {
-        username,
-        full_name,
-        email,
-        is_private: is_private || false,
-        profile_picture_url: profile_picture_url || null,
-        profile_metadata: profile_metadata || null,
-        bio: bio || null,
+        username: username || user.username,
+        full_name: full_name || user.full_name,
+        email: email || user.email,
+        is_private: is_private !== undefined ? is_private : user.is_private,
+        profile_picture_url: profile_picture_url !== undefined ? profile_picture_url : user.profile_picture_url,
+        profile_metadata: profile_metadata !== undefined ? profile_metadata : user.profile_metadata,
+        bio: bio !== undefined ? bio : user.bio,
       },
-      { where: { email: email } }
+      { where: { id: parseInt(id) } }
     );
-    return res.status(200).json({ message: "User updated successfully", user });
+
+    if (updatedRowsCount === 0) {
+      return res.status(400).json({ message: "No changes made to user" });
+    }
+
+    // Get the updated user to return
+    const updatedUser = await User.findByPk(id);
+    
+    return res.status(200).json({ 
+      message: "User updated successfully", 
+      user: {
+        id: updatedUser.id,
+        full_name: updatedUser.full_name,
+        username: updatedUser.username,
+        email: updatedUser.email,
+        is_private: updatedUser.is_private,
+        profile_picture_url: updatedUser.profile_picture_url,
+        profile_metadata: updatedUser.profile_metadata,
+        bio: updatedUser.bio,
+        follower_count: updatedUser.follower_count,
+        following_count: updatedUser.following_count,
+        created_at: updatedUser.created_at,
+      }
+    });
   }
 
   static async delete(req, res) {

@@ -102,7 +102,8 @@ const authLimiter = rateLimit(
     60 * 60 * 1000,
     "Too many authentication attempts, please try again after 1 hour",
     "AUTH_LIMIT",
-    (req) => getUserKey(req, req.body?.email || req.body?.username)
+    // (req) => getUserKey(req, req.body?.email || req.body?.username)
+    (req) => getUserKey(req,"login")
   )
 );
 
