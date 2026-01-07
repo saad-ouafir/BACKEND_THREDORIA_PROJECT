@@ -2,19 +2,11 @@ const { User } = require("../../models/index");
 const bcrypt = require("bcrypt");
 const RefreshTokenController = require("./refreshToken.controller");
 const { findUser } = require("../../utils/findUser");
+const { userDataSanitizer } = require("../../utils/userDataSanitizer");
 
 class UserController {
   static async register(req, res) {
-    const {
-      email,
-      username,
-      full_name,
-      password,
-      is_private,
-      profile_picture_url,
-      profile_metadata,
-      bio,
-    } = req.body;
+    const { email, username, full_name, password, is_private, profile_picture_url, profile_metadata, bio } = req.body;
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({
@@ -29,9 +21,7 @@ class UserController {
     });
 
     const accessToken = RefreshTokenController.generateAccessToken(user.id);
-    const refreshToken = await RefreshTokenController.generateRefreshToken(
-      user.id
-    );
+    const refreshToken = await RefreshTokenController.generateRefreshToken(user.id);
 
     // Set refresh token as HTTP-only cookie
     res.cookie("refreshToken", refreshToken, {
@@ -43,19 +33,7 @@ class UserController {
 
     return res.status(201).json({
       message: "User registered successfully",
-      user: {
-        id: user.id,
-        full_name: user.full_name,
-        username: user.username,
-        email: user.email,
-        is_private: user.is_private,
-        profile_picture_url: user.profile_picture_url,
-        profile_metadata: user.profile_metadata,
-        bio: user.bio,
-        follower_count: user.follower_count,
-        following_count: user.following_count,
-        created_at: user.created_at,
-      },
+      user: userDataSanitizer(user),
       accessToken,
     });
   }
@@ -63,7 +41,7 @@ class UserController {
   static async login(req, res) {
     const { email, password } = req.body;
     const user = await findUser(req, res, email, "Invalid mail or password !");
-    if (!user || res.headersSent) {
+    if (!user) {
       return;
     }
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
@@ -75,9 +53,7 @@ class UserController {
 
     const accessToken = RefreshTokenController.generateAccessToken(user.id);
 
-    const refreshToken = await RefreshTokenController.generateRefreshToken(
-      user.id
-    );
+    const refreshToken = await RefreshTokenController.generateRefreshToken(user.id);
 
     // Set refresh token as HTTP-only cookie
     res.cookie("refreshToken", refreshToken, {
@@ -89,20 +65,7 @@ class UserController {
 
     return res.status(200).json({
       message: "Login successful",
-      user: {
-        id: user.id,
-        full_name: user.full_name,
-        username: user.username,
-        email: user.email,
-        is_private: user.is_private,
-        profile_picture_url: user.profile_picture_url,
-        profile_metadata: user.profile_metadata,
-        bio: user.bio,
-        follower_count: user.follower_count,
-        following_count: user.following_count,
-        created_at: user.created_at,
-        createdAt: user.createdAt,
-      },
+      user: userDataSanitizer(user),
       accessToken,
     });
   }
@@ -112,9 +75,7 @@ class UserController {
 
     if (refreshToken) {
       // Find and delete the refresh token from database
-      const tokenData = await RefreshTokenController.validateRefreshToken(
-        refreshToken
-      );
+      const tokenData = await RefreshTokenController.validateRefreshToken(refreshToken);
       if (tokenData) {
         await RefreshTokenController.deleteRefreshTokens(tokenData.user_id);
       }
@@ -137,9 +98,7 @@ class UserController {
       return res.status(401).json({ message: "Refresh token not found" });
     }
 
-    const tokenData = await RefreshTokenController.validateRefreshToken(
-      refreshToken
-    );
+    const tokenData = await RefreshTokenController.validateRefreshToken(refreshToken);
     if (!tokenData) {
       return res.status(401).json({ message: "Invalid refresh token" });
     }
@@ -153,19 +112,7 @@ class UserController {
 
     return res.status(200).json({
       accessToken: newAccessToken,
-      user: {
-        id: user.id,
-        full_name: user.full_name,
-        username: user.username,
-        email: user.email,
-        is_private: user.is_private,
-        profile_picture_url: user.profile_picture_url,
-        profile_metadata: user.profile_metadata,
-        bio: user.bio,
-        follower_count: user.follower_count,
-        following_count: user.following_count,
-        created_at: user.created_at,
-      },
+      user: userDataSanitizer(user),
     });
   }
 
@@ -179,39 +126,25 @@ class UserController {
 
   static async update(req, res) {
     const { id } = req.params;
-    const {
-      email,
-      username,
-      full_name,
-      is_private,
-      profile_picture_url,
-      profile_metadata,
-      bio,
-    } = req.body;
-    
+    const { email, username, full_name, is_private, profile_picture_url, profile_metadata, bio } = req.body;
+
     // Check if user exists using findUser utility
     const user = await findUser(req, res, id, "User not found");
-    if (!user || res.headersSent) {
+    if (!user) {
       return;
     }
-    
+
     // Check if email is being changed and if it's already taken
     if (email && email !== user.email) {
-      const emailExists = await User.findOne({ where: { email } });
-      if (emailExists) {
-        return res.status(400).json({ message: "Email is already taken" });
-      }
+      return await findUser(req, res, email, "Email is already taken");
     }
 
     // Check if username is being changed and if it's already taken
     if (username && username !== user.username) {
-      const usernameExists = await User.findOne({ where: { username } });
-      if (usernameExists) {
-        return res.status(400).json({ message: "Username is already taken" });
-      }
+      return await findUser(req, res, username, "Username is already taken");
     }
 
-    const [updatedRowsCount] = await User.update(
+    await User.update(
       {
         username: username || user.username,
         full_name: full_name || user.full_name,
@@ -224,28 +157,9 @@ class UserController {
       { where: { id: parseInt(id) } }
     );
 
-    if (updatedRowsCount === 0) {
-      return res.status(400).json({ message: "No changes made to user" });
-    }
-
-    // Get the updated user to return
-    const updatedUser = await User.findByPk(id);
-    
-    return res.status(200).json({ 
-      message: "User updated successfully", 
-      user: {
-        id: updatedUser.id,
-        full_name: updatedUser.full_name,
-        username: updatedUser.username,
-        email: updatedUser.email,
-        is_private: updatedUser.is_private,
-        profile_picture_url: updatedUser.profile_picture_url,
-        profile_metadata: updatedUser.profile_metadata,
-        bio: updatedUser.bio,
-        follower_count: updatedUser.follower_count,
-        following_count: updatedUser.following_count,
-        created_at: updatedUser.created_at,
-      }
+    return res.status(200).json({
+      message: "User updated successfully",
+      user: userDataSanitizer(user),
     });
   }
 

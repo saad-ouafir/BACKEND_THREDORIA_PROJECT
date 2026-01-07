@@ -1,46 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const ProfileController = require("../../controllers/social/profile.controller");
-const ErrorHandler = require("../../middlewares/errorHandler.middleware");
-const authMiddleware = require("../../middlewares/auth.middleware");
+const { wrapController } = require("../../middlewares/errorHandler.middleware");
 
-// Public routes - no authentication required
-router.get(
-  "/suggestions",
-  ErrorHandler.handleAsync(ProfileController.getProfiles)
-);
+const Profile = wrapController(ProfileController);
 
-
-router.get(
-  "/search",
-  ErrorHandler.handleAsync(ProfileController.searchProfiles)
-);
-//user by id 
-router.get(
-  "/:id",
-  ErrorHandler.handleAsync(ProfileController.getProfilebyID)
-);
-//user by username
-router.get(
-  "/username/:username",
-  ErrorHandler.handleAsync(ProfileController.getProfileByUsername)
-);
-
-//get profile by tags
-router.get(
-  "/tags/:tags",
-  ErrorHandler.handleAsync(ProfileController.getProfilesByTags)
-);
-
-//followers
-router.get(
-  "/:id/followers",
-  ErrorHandler.handleAsync(ProfileController.getFollowers)
-);
-//following
-router.get(
-  "/:id/following",
-  ErrorHandler.handleAsync(ProfileController.getFollowing)
-);
+router.get("/suggest", Profile.suggestProfiles);
+router.get("/search", Profile.searchProfiles);
+router.get("/:id", Profile.getProfilebyID);
 
 module.exports = router;
