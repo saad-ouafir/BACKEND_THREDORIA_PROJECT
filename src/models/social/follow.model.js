@@ -25,7 +25,7 @@ module.exports = (sequelize) => {
         primaryKey: true,
       },
       status: {
-        type: DataTypes.ENUM("PENDING", "ACCEPTED"),
+        type: DataTypes.ENUM("PENDING", "ACCEPTED", "REJECTED"),
         defaultValue: "PENDING",
       },
       created_at: {

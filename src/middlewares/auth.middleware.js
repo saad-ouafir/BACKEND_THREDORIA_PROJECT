@@ -15,7 +15,8 @@ class AuthMiddleware {
       return res.status(401).json({ message: "Invalid or expired token" });
       }
 
-      req.user = decoded;
+      // req.user = decoded;
+       req.user = { userId: decoded.id || decoded.userId }; 
       next();
     });
   };
