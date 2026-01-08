@@ -125,7 +125,7 @@ class UserController {
   }
 
   static async update(req, res) {
-    const { id } = req.params;
+    const id = req.currentUser.id;
     const { email, username, full_name, is_private, profile_picture_url, profile_metadata, bio } = req.body;
 
     // Check if user exists using findUser utility
@@ -164,10 +164,15 @@ class UserController {
   }
 
   static async delete(req, res) {
-    const { id } = req.params;
+    const id = req.currentUser.id;
+    await RefreshTokenController.deleteRefreshTokens(id);
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
     const user = await findUser(req, res, id);
     await User.destroy({ where: { id: user.id } });
-    await RefreshTokenController.deleteRefreshTokens(id);
     return res.status(200).json({ message: "User deleted successfully" });
   }
 }
