@@ -15,14 +15,14 @@ const User = wrapController(UserController);
 // Public accessible Routes
 router.post("/register", createAccountLimiter, User.register);
 router.post("/login", authLimiter, User.login);
+router.post("/refresh", tokenRefreshLimiter, User.refresh);
 
 // Authentication middleware on protected routes
 router.use(AuthMiddleware.authenticateToken);
 router.use(AuthMiddleware.attachUser);
 
 // Protected Routes
-router.post("/refresh", tokenRefreshLimiter, User.refresh);
-router.post("/logout", authLimiter, User.logout);
+router.post("/logout", User.logout);
 router.post("/reset-password", authLimiter, passwordResetLimiter, User.resetPassword);
 router.put("/update", authLimiter, User.update);
 router.delete("/delete", authLimiter, User.delete);
