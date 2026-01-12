@@ -45,7 +45,7 @@ class RefreshTokenController {
   }
 
   static async deleteRefreshTokens(userId) {
-    await RefreshToken.destroy({ where: { user_id: userId } });
+    return await RefreshToken.destroy({ where: { user_id: userId } });
   }
 }
 

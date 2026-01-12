@@ -1,5 +1,5 @@
-const express = require("express");
-const router = express.Router();
+const router = require("express").Router();
+
 const ProfileController = require("../../controllers/social/profile.controller");
 const { wrapController } = require("../../middlewares/errorHandler.middleware");
 

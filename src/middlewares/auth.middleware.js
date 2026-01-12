@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const { User } = require("../models/index");
+const { JWT_SECRET } = require("../config/config");
 
 class AuthMiddleware {
   static authenticateToken = (req, res, next) => {
@@ -7,44 +8,17 @@ class AuthMiddleware {
     const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
 
     if (!token) {
-      return res.status(401).json({ message: "Access token required" });
+      return res.status(401).json({ message: "Authentication required" });
     }
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    jwt.verify(token, JWT_SECRET, (err, decoded) => {
       if (err) {
-      return res.status(401).json({ message: "Invalid or expired token" });
+        return res.status(401).json({ message: "Invalid or expired token" });
       }
 
       req.user = decoded;
       next();
     });
-  };
-
-  static optionalAuth = (req, res, next) => {
-    const authHeader = req.headers["authorization"];
-    const token = authHeader && authHeader.split(" ")[1];
-
-    if (!token) {
-      req.user = null;
-      return next();
-    }
-
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-      if (err) {
-        req.user = null;
-        return next();
-      }
-
-      req.user = decoded;
-      next();
-    });
-  };
-
-  static requireAuth = (req, res, next) => {
-    if (!req.user) {
-     return res.status(401).json({ message: "Authentication required" });
-    }
-    next();
   };
 
   static async attachUser(req, res, next) {
@@ -67,18 +41,6 @@ class AuthMiddleware {
       next(error);
     }
   }
-
-  static authorize = (...roles) => {
-    return (req, res, next) => {
-      if (!req.currentUser) {
-       return res.status(401).json({ message: "Authentication required" });
-      }
-
-      // Add role-based authorization if needed in the future
-      // For now, just check if user exists
-      next();
-    };
-  };
 }
 
 module.exports = AuthMiddleware;
