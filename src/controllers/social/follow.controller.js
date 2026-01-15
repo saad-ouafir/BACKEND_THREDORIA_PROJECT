@@ -1,10 +1,11 @@
 const { findUser } = require("../../utils/findUser");
 const { sequelize, User, Follow } = require("../../models");
+const { notificationEmitter } = require("../../middlewares/notification.middleware");
 
 class FollowRequest {
   // Follow a user
   static async followUser(req, res) {
-    const { followingId } = req.body;
+    const { followingId } = req.params;
     const followerId = req.currentUser.id;
     const userToFollow = await findUser(req, res, followingId);
 
@@ -13,6 +14,17 @@ class FollowRequest {
       follower_id: followerId,
       following_id: parseInt(followingId),
       status: followStatus,
+    });
+
+    // Emit notification event instead of direct creation
+    const io = req.app.get('io');
+    const eventType = followStatus === "PENDING" ? "follow_request" : "follow_accept";
+    
+    notificationEmitter.emit(eventType, {
+      recipientId: followingId,
+      senderId: followerId,
+      type: followStatus === "PENDING" ? "FOLLOW_REQUEST" : "FOLLOW_ACCEPT",
+      io: io
     });
 
     // Update follower/following counts if accepted
@@ -30,7 +42,7 @@ class FollowRequest {
   // Unfollow a user
   static async unfollowUser(req, res) {
     const { followingId } = req.params;
-    const followerId = req.user.userId;
+    const followerId = req.currentUser.id;
     const follow = await Follow.findOne({
       where: {
         follower_id: followerId,
@@ -58,7 +70,7 @@ class FollowRequest {
     const currentUserId = req.currentUser?.id;
     const { limit = 20, offset = 0 } = req.query;
     // Check if user exists and get privacy settings
-    const targetUser = await User.findUser(req, res, userId);
+    const targetUser = await findUser(req, res, userId);
     const isOwnProfile = currentUserId === parseInt(userId);
     const isPublicAccount = !targetUser.is_private;
 
@@ -215,9 +227,19 @@ class FollowRequest {
         message: "Follow request not found",
       });
     }
+
     await followRequest.update({ status: "ACCEPTED" });
     await User.increment("follower_count", { where: { id: followRequest.following_id } });
     await User.increment("following_count", { where: { id: followRequest.follower_id } });
+
+    // Emit follow accept notification event
+    const io = req.app.get('io');
+    notificationEmitter.emit('follow_accept', {
+      recipientId: followerID, // The person who requested to follow
+      senderId: userId,          // The person who accepted
+      type: 'FOLLOW_ACCEPT',
+      io: io
+    });
 
     return res.status(200).json({
       message: "Follow request accepted Successfully !",

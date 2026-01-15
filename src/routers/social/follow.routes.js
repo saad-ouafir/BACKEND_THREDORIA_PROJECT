@@ -12,7 +12,7 @@ router.use(AuthMiddleware.attachUser);
 
 // Follow / Unfollow Routes
 router.post("/follow/:followingId", Follow.followUser);
-router.post("/unfloww/:followingId", Follow.unfollowUser);
+router.post("/unfollow/:followingId", Follow.unfollowUser);
 
 // Get Following / Followers Routes
 router.get("/:userId/followers", Follow.getFollowers);
