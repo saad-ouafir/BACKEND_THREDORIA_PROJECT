@@ -243,8 +243,8 @@ class NotificationController {
 
   // Create like notification
   async createLikeNotification(req, res) {
-    try {
-      const { contentId, contentType, contentOwnerId } = req.params;
+       // threadId , type , authorId
+      const { contentId, contentType, contentOwnerId } = req.params; // contentId is the id of the content that is liked
       const likerId = req.currentUser.id;
 
       if (!contentOwnerId) {
@@ -292,14 +292,6 @@ class NotificationController {
         data: notificationWithSender,
         message: 'Like notification created'
       });
-    } catch (error) {
-      console.error('Error creating like notification:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to create like notification',
-        error: error.message
-      });
-    }
   }
 
   // Create reply notification
