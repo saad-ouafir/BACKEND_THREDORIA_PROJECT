@@ -380,7 +380,7 @@ class NotificationController {
       const notification = await Notification.create({
         recipient_id: originalAuthorId,
         sender_id: sharerId,
-        type: 'share',
+        type: 'SHARE',
         is_read: false,
         created_at: new Date()
       });
@@ -421,7 +421,7 @@ class NotificationController {
         return `${senderName} liked your content`;
       case 'REPLY':
         return `${senderName} replied to your thread`;
-      case 'share':
+      case 'SHARE':
         return `${senderName} shared your content`;
       default:
         return `${senderName} interacted with your content`;

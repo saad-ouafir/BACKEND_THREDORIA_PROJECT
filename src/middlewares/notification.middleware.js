@@ -10,15 +10,12 @@ class NotificationMiddleware {
   static async createNotification(req, res, next) {
     // This middleware creates notifications and emits WebSocket events
     // Call this after database operations that should trigger notifications
-    
     const { type, recipientId, senderId, targetId } = req.body;
     const io = req.app.get('io');
     
     if (!type || !recipientId || !senderId) {
       return next();
     }
-
-    try {
       // Create notification in database
       const notification = await Notification.create({
         recipient_id: recipientId,
@@ -51,10 +48,6 @@ class NotificationMiddleware {
 
       req.notification = notificationWithSender;
       next();
-    } catch (error) {
-      console.error('Error creating notification:', error);
-      next(error);
-    }
   }
 
   // Event-based notification creation
@@ -124,25 +117,13 @@ class NotificationMiddleware {
   }
 
   static async createLikeNotification(data) {
-    // Implementation for like notifications
-    const { recipientId, senderId, contentId, io } = data;
-    // Similar structure...
-  }
-
-  static async createReplyNotification(data) {
-    // Implementation for reply notifications
-    const { recipientId, senderId, threadId, replyId, io } = data;
-    // Similar structure...
-  }
-
-  static async createShareNotification(data) {
     const { recipientId, senderId, contentId, io } = data;
     
     try {
       const notification = await Notification.create({
         recipient_id: recipientId,
         sender_id: senderId,
-        type: 'share',
+        type: 'LIKE',
         target_id: contentId,
         is_read: false,
         created_at: new Date()
@@ -161,7 +142,83 @@ class NotificationMiddleware {
       // Emit WebSocket event
       if (io) {
         io.to(`user_${recipientId}`).emit('notification', {
-          type: 'share',
+          type: 'LIKE',
+          senderId: senderId,
+          notification: notificationWithSender
+        });
+      }
+
+      return notificationWithSender;
+    } catch (error) {
+      console.error('Error creating like notification:', error);
+    }
+  }
+
+  static async createReplyNotification(data) {
+    const { recipientId, senderId, threadId, replyId, io } = data;
+    
+    try {
+      const notification = await Notification.create({
+        recipient_id: recipientId,
+        sender_id: senderId,
+        type: 'REPLY',
+        target_id: threadId,
+        is_read: false,
+        created_at: new Date()
+      });
+
+      const notificationWithSender = await Notification.findByPk(notification.id, {
+        include: [
+          {
+            model: User,
+            as: 'sender',
+            attributes: ['id', 'username', 'full_name', 'profile_picture_url']
+          }
+        ]
+      });
+
+      // Emit WebSocket event
+      if (io) {
+        io.to(`user_${recipientId}`).emit('notification', {
+          type: 'REPLY',
+          senderId: senderId,
+          notification: notificationWithSender
+        });
+      }
+
+      return notificationWithSender;
+    } catch (error) {
+      console.error('Error creating reply notification:', error);
+    }
+  }
+
+  static async createShareNotification(data) {
+    const { recipientId, senderId, contentId, io } = data;
+    
+    try {
+      const notification = await Notification.create({
+        recipient_id: recipientId,
+        sender_id: senderId,
+        type: 'SHARE',
+        target_id: contentId,
+        is_read: false,
+        created_at: new Date()
+      });
+
+      const notificationWithSender = await Notification.findByPk(notification.id, {
+        include: [
+          {
+            model: User,
+            as: 'sender',
+            attributes: ['id', 'username', 'full_name', 'profile_picture_url']
+          }
+        ]
+      });
+
+      // Emit WebSocket event
+      if (io) {
+        io.to(`user_${recipientId}`).emit('notification', {
+          type: 'SHARE',
           senderId: senderId,
           notification: notificationWithSender
         });

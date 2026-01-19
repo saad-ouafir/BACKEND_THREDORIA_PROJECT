@@ -28,7 +28,7 @@ module.exports = (sequelize) => {
         onDelete: "CASCADE",
       },
       type: {
-        type: DataTypes.ENUM("LIKE", "SHARE"),
+        type: DataTypes.ENUM("LIKE", "SHARE" , "REPLY"),
         allowNull: false,
       },
       created_at: {
