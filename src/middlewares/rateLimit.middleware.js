@@ -4,10 +4,7 @@ global.rateLimitBlocks = global.rateLimitBlocks || {};
 
 const getClientIP = (req) => {
   return (
-    req.headers["x-forwarded-for"]?.split(",")[0] ||
-    req.headers["x-real-ip"] ||
-    req.ip ||
-    req.connection.remoteAddress
+    req.headers["x-forwarded-for"]?.split(",")[0] || req.headers["x-real-ip"] || req.ip || req.connection.remoteAddress
   );
 };
 
@@ -28,12 +25,7 @@ const formatDuration = (seconds) => {
   return parts.join(" ") || "0s";
 };
 
-const formatBlockResponse = (
-  errorMessage,
-  blockType,
-  blockedUntil,
-  retryAfter
-) => ({
+const formatBlockResponse = (errorMessage, blockType, blockedUntil, retryAfter) => ({
   error: errorMessage,
   blockType,
   blockedUntil: new Date(blockedUntil).toISOString(),
@@ -49,14 +41,7 @@ const createBlock = (blockKey, durationMs, errorMessage, blockType) => {
   return formatBlockResponse(errorMessage, blockType, blockedUntil, retryAfter);
 };
 
-const createLimiterConfig = (
-  windowMs,
-  max,
-  blockDurationMs,
-  errorMessage,
-  blockType,
-  keyGen
-) => ({
+const createLimiterConfig = (windowMs, max, blockDurationMs, errorMessage, blockType, keyGen) => ({
   windowMs,
   max,
   standardHeaders: true,
@@ -67,14 +52,12 @@ const createLimiterConfig = (
   handler: (req, res) => {
     const key = keyGen(req);
     const blockKey = `blocked_${blockType}_${key}`;
-    res
-      .status(429)
-      .json(createBlock(blockKey, blockDurationMs, errorMessage, blockType));
+    res.status(429).json(createBlock(blockKey, blockDurationMs, errorMessage, blockType));
   },
 });
 
 const apiLimiter = rateLimit({
-  windowMs: 2 * 60 * 1000,
+  windowMs: 1 * 60 * 1000,
   max: 50,
   standardHeaders: true,
   legacyHeaders: false,
@@ -89,8 +72,8 @@ const apiLimiter = rateLimit({
           "Too many requests from this IP, please try again after 2 minutes",
           "API_LIMIT",
           blockedUntil,
-          120
-        )
+          120,
+        ),
       );
   },
 });
@@ -103,8 +86,8 @@ const authLimiter = rateLimit(
     "Too many authentication attempts, please try again after 1 hour",
     "AUTH_LIMIT",
     // (req) => getUserKey(req, req.body?.email || req.body?.username)
-    (req) => getUserKey(req,"login")
-  )
+    (req) => getUserKey(req, "login"),
+  ),
 );
 
 const passwordResetLimiter = rateLimit(
@@ -114,8 +97,8 @@ const passwordResetLimiter = rateLimit(
     24 * 60 * 60 * 1000,
     "Too many password reset attempts, please try again after 24 hours",
     "PASSWORD_RESET_LIMIT",
-    (req) => getUserKey(req, req.body?.email)
-  )
+    (req) => getUserKey(req, req.body?.email),
+  ),
 );
 
 const tokenRefreshLimiter = rateLimit(
@@ -125,8 +108,8 @@ const tokenRefreshLimiter = rateLimit(
     30 * 60 * 1000,
     "Too many token refresh attempts, please try again after 30 minutes",
     "TOKEN_REFRESH_LIMIT",
-    (req) => getClientIP(req)
-  )
+    (req) => getClientIP(req),
+  ),
 );
 
 const createAccountLimiter = rateLimit(
@@ -136,8 +119,8 @@ const createAccountLimiter = rateLimit(
     6 * 60 * 60 * 1000,
     "Too many account creation attempts, please try again after 6 hours",
     "REGISTER_LIMIT",
-    (req) => getUserKey(req, req.body?.email)
-  )
+    (req) => getUserKey(req, req.body?.email),
+  ),
 );
 
 const checkBlock = (req, res, next) => {
@@ -176,16 +159,7 @@ const checkBlock = (req, res, next) => {
     if (blocks[check.key] && blocks[check.key] > now) {
       const blockedUntil = blocks[check.key];
       const retryAfter = Math.ceil((blockedUntil - now) / 1000);
-      return res
-        .status(429)
-        .json(
-          formatBlockResponse(
-            check.message,
-            check.type,
-            blockedUntil,
-            retryAfter
-          )
-        );
+      return res.status(429).json(formatBlockResponse(check.message, check.type, blockedUntil, retryAfter));
     }
   }
 

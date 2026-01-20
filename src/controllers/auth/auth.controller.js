@@ -40,7 +40,7 @@ class UserController {
 
   static async login(req, res) {
     const { email, password } = req.body;
-    const user = await findUser(req, res, email, "Invalid mail or password !");
+    const user = await findUser(res, email, "Invalid mail or password !");
     if (!user) {
       return;
     }
@@ -118,7 +118,7 @@ class UserController {
 
   static async resetPassword(req, res) {
     const { email, newPassword } = req.body;
-    const user = await findUser(req, res, email);
+    const user = await findUser(res, email);
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await user.update({ password_hash: hashedPassword });
     return res.status(200).json({ message: "Password reset successfully" });
@@ -129,19 +129,9 @@ class UserController {
     const { email, username, full_name, is_private, profile_picture_url, profile_metadata, bio } = req.body;
 
     // Check if user exists using findUser utility
-    const user = await findUser(req, res, id, "User not found");
+    const user = await findUser(res, id, "User not found");
     if (!user) {
       return;
-    }
-
-    // Check if email is being changed and if it's already taken
-    if (email && email !== user.email) {
-      return await findUser(req, res, email, "Email is already taken");
-    }
-
-    // Check if username is being changed and if it's already taken
-    if (username && username !== user.username) {
-      return await findUser(req, res, username, "Username is already taken");
     }
 
     await User.update(
@@ -157,9 +147,12 @@ class UserController {
       { where: { id: parseInt(id) } }
     );
 
+    // Fetch the updated user data
+    const updatedUser = await User.findByPk(id);
+
     return res.status(200).json({
       message: "User updated successfully",
-      user: userDataSanitizer(user),
+      user: userDataSanitizer(updatedUser),
     });
   }
 
@@ -171,7 +164,7 @@ class UserController {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
     });
-    const user = await findUser(req, res, id);
+    const user = await findUser(res, id);
     await User.destroy({ where: { id: user.id } });
     return res.status(200).json({ message: "User deleted successfully" });
   }

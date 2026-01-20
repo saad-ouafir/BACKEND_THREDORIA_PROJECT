@@ -1,12 +1,13 @@
 const { where, Op, Sequelize } = require("sequelize");
 const { User, Follow, Thread } = require("../../models/index");
 const { findUser } = require("../../utils/findUser");
+const { userDataSanitizer } = require("../../utils/userDataSanitizer");
 
 class ProfileController {
   static async suggestProfiles(req, res) {
-    const { limit = 10, cursor, exclude } = req.query;
+    const { cursor, exclude } = req.params;
     const excludeIds = exclude ? exclude.split(",").map(Number) : [];
-    const currentUserId = req.user?.id;
+    const currentUserId = req.currentUser?.id;
 
     if (currentUserId) excludeIds.push(currentUserId);
 
@@ -18,24 +19,15 @@ class ProfileController {
 
     const users = await User.findAll({
       where: whereClause,
-      limit: parseInt(limit),
+      limit: parseInt(10),
       order: [["id", "DESC"]],
-      attributes: ["id", "full_name", "username", "profile_picture_url", "bio", "follower_count", "following_count", "created_at"],
+      attributes: ["id", "full_name", "username", "profile_picture_url"],
     });
 
-    const nextCursor = users.length === parseInt(limit) ? users[users.length - 1].id : null;
+    const nextCursor = users.length === parseInt(10) ? users[users.length - 1].id : null;
 
     return res.status(200).json({
-      users: users.map((u) => ({
-        id: u.id,
-        name: u.full_name,
-        username: u.username,
-        avatar: u.profile_picture_url,
-        bio: u.bio,
-        followers: u.follower_count,
-        following: u.following_count,
-        joined: u.created_at,
-      })),
+      users: users.map((u) => userDataSanitizer(u)),
       nextCursor,
       hasMore: !!nextCursor,
     });
@@ -62,23 +54,15 @@ class ProfileController {
 
     // Check if profile is private and not the owner
     if (user.is_private && (!req.user || req.user.id !== parseInt(id))) {
-      return res.status(403).json({
+      return res.status(200).json({
         message: "This profile is private",
+        user: userDataSanitizer(user),
       });
     }
 
     return res.status(200).json({
       message: "Profile fetched successfully",
-      user: {
-        id: user.id,
-        name: user.full_name,
-        username: user.username,
-        avatar: user.profile_picture_url,
-        bio: user.bio,
-        followers: user.follower_count,
-        following: user.following_count,
-        joined: user.created_at,
-      },
+      user: userDataSanitizer(user),
     });
   }
 
@@ -98,7 +82,7 @@ class ProfileController {
 
     return res.status(200).json({
       message: "Profiles fetched successfully",
-      users,
+      users: users.map((u) => userDataSanitizer(u)),
     });
   }
 }

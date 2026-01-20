@@ -8,12 +8,15 @@ const AuthMiddleware = require("../../middlewares/auth.middleware");
 // router.use(AuthMiddleware.attachUser);
 
 const Thread = wrapController(ThreadController);
-router.get("/userThreads/:userId", Thread.getThreadsByUserID);
+router.get("/user/:userId", Thread.getThreadsByUserID);
 router.get("/thread/:threadId", Thread.getThreadById);
 router.get("/subThreads/:parentID", Thread.getSubThreads);
-router.post("/create", Thread.createThread);
-router.delete("/delete/:threadId", Thread.deleteThreadById);
 router.get("/search", Thread.searchThreads);
 router.get("/suggest", Thread.suggestThreadByTag);
+
+router.use(AuthMiddleware.authenticateToken);
+router.use(AuthMiddleware.attachUser);
+router.post("/create", Thread.createThread);
+router.delete("/delete/:threadId", Thread.deleteThreadById);
 
 module.exports = router;

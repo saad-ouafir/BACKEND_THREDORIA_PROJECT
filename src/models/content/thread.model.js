@@ -78,12 +78,6 @@ module.exports = (sequelize) => {
       as: "reactions",
     });
     Thread.hasMany(models.Media, { foreignKey: "thread_id", as: "media" });
-    Thread.belongsToMany(models.Tag, {
-      through: models.ThreadTag,
-      foreignKey: "thread_id",
-      otherKey: "tag_id",
-      as: "tags",
-    });
   };
 
   return Thread;

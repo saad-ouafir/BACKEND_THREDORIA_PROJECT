@@ -12,6 +12,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "@google-cloud/storage": "^7.18.0",
     "@reduxjs/toolkit": "^2.11.2",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
@@ -22,6 +23,7 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
+    "multer": "^2.0.2",
     "mysql2": "^3.16.0",
     "react-redux": "^9.2.0",
     "sequelize": "^6.37.7"

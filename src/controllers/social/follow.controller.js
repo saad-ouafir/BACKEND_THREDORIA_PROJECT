@@ -1,12 +1,22 @@
 const { findUser } = require("../../utils/findUser");
 const { sequelize, User, Follow } = require("../../models");
+const { Op } = require("sequelize");
 
 class FollowRequest {
   // Follow a user
   static async followUser(req, res) {
     const { followingId } = req.body;
-    const followerId = req.currentUser.id;
-    const userToFollow = await findUser(req, res, followingId);
+    const followerId = req.currentUser?.id;
+    const userToFollow = await findUser(res, followingId);
+
+    const checkFollowed = await Follow.findAll({
+      where: {
+        [Op.and]: [{ following_id: userToFollow.id }, { follower_id: followerId }],
+      },
+    });
+    if (checkFollowed.length > 0) {
+      return res.status(404).json({ message: "You are already following This User" });
+    }
 
     const followStatus = userToFollow.is_private ? "PENDING" : "ACCEPTED";
     const follow = await Follow.create({
@@ -24,6 +34,7 @@ class FollowRequest {
     return res.status(201).json({
       success: true,
       message: followStatus === "PENDING" ? "Follow request sent" : "User followed successfully",
+      followStatus,
     });
   }
 
@@ -58,7 +69,7 @@ class FollowRequest {
     const currentUserId = req.currentUser?.id;
     const { limit = 20, offset = 0 } = req.query;
     // Check if user exists and get privacy settings
-    const targetUser = await User.findUser(req, res, userId);
+    const targetUser = await findUser(res, userId);
     const isOwnProfile = currentUserId === parseInt(userId);
     const isPublicAccount = !targetUser.is_private;
 
@@ -102,7 +113,7 @@ class FollowRequest {
 
     return res.status(200).json({
       message: "Followers fetched successfully",
-      followers,
+      followers: followers.map((f) => f.follower),
     });
   }
 
@@ -165,7 +176,7 @@ class FollowRequest {
 
     return res.status(200).json({
       message: "Following fetched successfully",
-      following,
+      following: following.map((f) => f.following),
     });
   }
 

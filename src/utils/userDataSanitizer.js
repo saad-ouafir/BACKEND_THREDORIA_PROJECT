@@ -7,6 +7,9 @@ function userDataSanitizer(data) {
     profile_picture_url,
     profile_metadata,
     bio,
+    follower_count,
+    following_count,
+    created_at,
   } = data;
   return {
     id,
@@ -16,6 +19,9 @@ function userDataSanitizer(data) {
     profile_picture_url,
     profile_metadata,
     bio,
+    follower_count,
+    following_count,
+    created_at,
   };
 }
 

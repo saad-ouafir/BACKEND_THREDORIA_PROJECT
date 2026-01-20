@@ -6,7 +6,7 @@ const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
 const { apiLimiter } = require("./middlewares/rateLimit.middleware");
 
-const { APP_PORT } = require("./config/config") || 5000;
+const { APP_PORT, FRONTEND_APP_PORT } = require("./config/config") || 5000;
 const { connectDataBase } = require("./config/database");
 
 server.listen(APP_PORT, () => {
@@ -20,7 +20,7 @@ server.use(express.urlencoded({ extended: true }));
 server.use(cookieParser());
 server.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: FRONTEND_APP_PORT || 3000,
     credentials: true,
   })
 );

@@ -43,7 +43,7 @@ class ErrorHandler {
   // Undefined route
   static notFoundHandler = (req, res) => {
     return res.status(404).json({
-      message: "Undefined Route !",
+      message: "Error 404, Undefined Route !",
     });
   };
 }
