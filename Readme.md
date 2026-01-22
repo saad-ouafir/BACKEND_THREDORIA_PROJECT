@@ -1,3 +1,3 @@
 ## About This Project
 
-Hello
+`Threadoria`, a Full Stack Web application
