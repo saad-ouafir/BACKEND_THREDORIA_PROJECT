@@ -9,12 +9,13 @@ class ErrorHandler {
     return Object.fromEntries(
       Object.getOwnPropertyNames(controller)
         .filter((method) => typeof controller[method] === "function")
-        .map((method) => [method, ErrorHandler.handleAsync(controller[method].bind(controller))])
+        .map((method) => [method, ErrorHandler.handleAsync(controller[method].bind(controller))]),
     );
   }
 
   static globalErrorHandler = (error, req, res, next) => {
-    console.log(error);
+    console.error("Express Error Handler:", error);
+
     // Sequelize errors
     if (error.name === "SequelizeUniqueConstraintError") {
       return res.status(409).json({
@@ -31,6 +32,12 @@ class ErrorHandler {
     if (error.name === "SequelizeValidationError") {
       return res.status(400).json({
         message: "Data validation error",
+      });
+    }
+
+    if (error.name === "SequelizeDatabaseError") {
+      return res.status(400).json({
+        message: "Unexpected Database error !",
       });
     }
 

@@ -1,8 +1,8 @@
 const { findUser } = require("../../utils/findUser");
 const { sequelize, User, Follow } = require("../../models");
 const { Op } = require("sequelize");
-
-class FollowRequest {
+const { eventsHandler } = require("../../handlers/eventsHandler");
+class FollowController {
   // Follow a user
   static async followUser(req, res) {
     const { followingId } = req.body;
@@ -19,11 +19,15 @@ class FollowRequest {
     }
 
     const followStatus = userToFollow.is_private ? "PENDING" : "ACCEPTED";
-    const follow = await Follow.create({
+    await Follow.create({
       follower_id: followerId,
       following_id: parseInt(followingId),
       status: followStatus,
     });
+
+    // Emit notification event instead of direct creation
+    const eventType = followStatus === "PENDING" ? "follow_request" : "follow_accept";
+    eventsHandler.emit("notification", eventType.toUpperCase(), followerId, followingId, followingId);
 
     // Update follower/following counts if accepted
     if (followStatus === "ACCEPTED") {
@@ -32,8 +36,7 @@ class FollowRequest {
     }
 
     return res.status(201).json({
-      success: true,
-      message: followStatus === "PENDING" ? "Follow request sent" : "User followed successfully",
+      message: followStatus === "PENDING" ? "Follow request sent to the user !" : "User followed successfully",
       followStatus,
     });
   }
@@ -209,12 +212,13 @@ class FollowRequest {
 
   // Accept a follow request
   static async acceptFollowRequest(req, res) {
-    const { followerID } = req.params;
+    const { followerID } = req.body;
     const userId = req.currentUser.id;
+    console.log("follower id", followerID);
 
     const followRequest = await Follow.findOne({
       where: {
-        follower_id: Number(followerID),
+        follower_id: followerID,
         following_id: userId,
         status: "PENDING",
       },
@@ -222,13 +226,15 @@ class FollowRequest {
 
     if (!followRequest) {
       return res.status(404).json({
-        success: false,
         message: "Follow request not found",
       });
     }
     await followRequest.update({ status: "ACCEPTED" });
     await User.increment("follower_count", { where: { id: followRequest.following_id } });
     await User.increment("following_count", { where: { id: followRequest.follower_id } });
+
+    // Emit follow accept notification event
+    eventsHandler.emit("notification", "FOLLOW_ACCEPT", userId, followerID, followerID);
 
     return res.status(200).json({
       message: "Follow request accepted Successfully !",
@@ -261,4 +267,4 @@ class FollowRequest {
   }
 }
 
-module.exports = FollowRequest;
+module.exports = FollowController;

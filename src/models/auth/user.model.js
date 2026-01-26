@@ -76,17 +76,33 @@ module.exports = (sequelize) => {
           fields: ["email"],
         },
       ],
-    }
+    },
   );
 
   User.associate = (models) => {
-    User.hasMany(models.Thread, { foreignKey: "author_id", as: "threads" });
-    User.hasMany(models.Follow, { foreignKey: "follower_id", as: "following" });
+    // Content associations
+    User.hasMany(models.Thread, {
+      foreignKey: "author_id",
+      as: "threads",
+    });
+
+    // Social associations
+    User.hasMany(models.Follow, {
+      foreignKey: "follower_id",
+      as: "following",
+    });
     User.hasMany(models.Follow, {
       foreignKey: "following_id",
       as: "followers",
     });
-    User.hasMany(models.Reaction, { foreignKey: "user_id", as: "reactions" });
+
+    // Reaction associations
+    User.hasMany(models.Reaction, {
+      foreignKey: "user_id",
+      as: "reactions",
+    });
+
+    // Notification associations
     User.hasMany(models.Notification, {
       foreignKey: "recipient_id",
       as: "receivedNotifications",
@@ -95,9 +111,26 @@ module.exports = (sequelize) => {
       foreignKey: "sender_id",
       as: "sentNotifications",
     });
+
+    // Authentication associations
     User.hasMany(models.RefreshToken, {
       foreignKey: "user_id",
       as: "refreshTokens",
+    });
+
+    // Add reverse associations for better querying
+    User.belongsToMany(models.User, {
+      through: models.Follow,
+      foreignKey: "follower_id",
+      otherKey: "following_id",
+      as: "followingUsers",
+    });
+
+    User.belongsToMany(models.User, {
+      through: models.Follow,
+      foreignKey: "following_id",
+      otherKey: "follower_id",
+      as: "followerUsers",
     });
   };
 

@@ -2,7 +2,7 @@ const { RefreshToken } = require("../../models/index");
 const { JWT_SECRET } = require("../../config/config");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { v4: uuidv4 } = require("uuid");
+const crypto = require("crypto");
 
 class RefreshTokenController {
   static generateAccessToken(userId) {
@@ -13,8 +13,10 @@ class RefreshTokenController {
   }
 
   static async generateRefreshToken(userId) {
-    const token = uuidv4();
-    const tokenHash = await bcrypt.hash(token, 10);
+    console.time("generateToken");
+    await RefreshTokenController.deleteRefreshTokens(userId);
+    const token = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
 
     await RefreshToken.create({
@@ -22,30 +24,31 @@ class RefreshTokenController {
       token_hash: tokenHash,
       expires_at: expiresAt,
     });
+    console.timeEnd("generateToken");
 
     return token;
   }
 
   static async validateRefreshToken(token) {
-    const refreshTokens = await RefreshToken.findAll({
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const refreshToken = await RefreshToken.findOne({
       where: {
-        expires_at: {
-          [require("sequelize").Op.gt]: new Date(),
-        },
+        token_hash: tokenHash,
       },
-      limit: 1000, // reasonable limit to prevent excessive memory usage
     });
-    for (const refreshToken of refreshTokens) {
-      let isValid = await bcrypt.compare(token, refreshToken.token_hash);
-      if (isValid && refreshToken.expires_at > new Date()) {
-        return refreshToken;
-      }
+    if (refreshToken && refreshToken.expires_at > new Date()) {
+      return refreshToken;
     }
+
     return null;
   }
 
   static async deleteRefreshTokens(userId) {
-    return await RefreshToken.destroy({ where: { user_id: userId } });
+    console.time("deleteTokens");
+    const result = await RefreshToken.destroy({ where: { user_id: userId }, limit: 100 });
+    console.timeEnd("deleteTokens");
+    console.log(`Deleted ${result} tokens for user ${userId}`);
+    return result;
   }
 }
 

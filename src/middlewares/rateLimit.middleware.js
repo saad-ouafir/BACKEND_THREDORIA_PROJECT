@@ -104,7 +104,7 @@ const passwordResetLimiter = rateLimit(
 const tokenRefreshLimiter = rateLimit(
   createLimiterConfig(
     10 * 60 * 1000,
-    10,
+    2,
     30 * 60 * 1000,
     "Too many token refresh attempts, please try again after 30 minutes",
     "TOKEN_REFRESH_LIMIT",

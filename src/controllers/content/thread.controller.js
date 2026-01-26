@@ -4,17 +4,26 @@ const { Sequelize } = require("sequelize");
 class ThreadController {
   static async getThreadsByUserID(req, res) {
     const { userId } = req.params;
-    const threads = await findThreads(res, userId);
+    const currentUserId = req.currentUser?.id || null;
+    const threads = await findThreads(res, userId, null, null, 10, 0, currentUserId);
+    const formattedThreads = threads.map((thread) => {
+      const isLiked = thread.reactions && thread.reactions.length > 0;
+      return {
+        ...thread.toJSON(),
+        isLiked,
+      };
+    });
     return res.status(200).json({
       message: "Threads fetched successfully",
-      threads,
+      threads: formattedThreads,
     });
   }
 
   // Get Sub Threads
   static async getSubThreads(req, res) {
     const { parentID } = req.params;
-    const threads = await findThreads(res, null, null, parentID);
+    const currentUserId = req.currentUser?.id || null;
+    const threads = await findThreads(res, null, null, parentID, 10, 0, currentUserId);
     if (threads === null) return; // Error already handled in findThreads
 
     return res.status(200).json({
@@ -68,7 +77,6 @@ class ThreadController {
         thread: {
           id: thread.id,
           content: thread.content,
-          author_id: thread.author_id,
           parent_id: thread.parent_id,
           created_at: thread.created_at,
         },
@@ -200,10 +208,6 @@ class ThreadController {
             attributes: ["id", "url", "media_type"],
             separate: true,
           },
-        ],
-        order: [
-          ["likes_count", "DESC"],
-          ["created_at", "DESC"],
         ],
         limit: parseInt(limit),
       });

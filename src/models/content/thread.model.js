@@ -66,18 +66,48 @@ module.exports = (sequelize) => {
           fields: ["parent_id"],
         },
       ],
-    }
+    },
   );
 
   Thread.associate = (models) => {
-    Thread.belongsTo(models.User, { foreignKey: "author_id", as: "author" });
-    Thread.belongsTo(models.Thread, { foreignKey: "parent_id", as: "parent" });
-    Thread.hasMany(models.Thread, { foreignKey: "parent_id", as: "replies" });
+    // Basic associations
+    Thread.belongsTo(models.User, {
+      foreignKey: "author_id",
+      as: "author",
+    });
+
+    // Self-referencing associations
+    Thread.belongsTo(models.Thread, {
+      foreignKey: "parent_id",
+      as: "parent",
+    });
+    Thread.hasMany(models.Thread, {
+      foreignKey: "parent_id",
+      as: "replies",
+    });
+
+    // Engagement associations
     Thread.hasMany(models.Reaction, {
       foreignKey: "thread_id",
       as: "reactions",
     });
-    Thread.hasMany(models.Media, { foreignKey: "thread_id", as: "media" });
+
+    // Media associations
+    Thread.hasMany(models.Media, {
+      foreignKey: "thread_id",
+      as: "media",
+    });
+
+    // Notification associations (for replies)
+    Thread.hasMany(models.Notification, {
+      foreignKey: "target_id",
+      as: "notifications",
+      scope: {
+        where: {
+          type: ["REPLY", "LIKE", "SHARE"],
+        },
+      },
+    });
   };
 
   return Thread;

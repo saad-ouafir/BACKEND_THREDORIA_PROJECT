@@ -33,7 +33,7 @@ module.exports = (sequelize) => {
         comment: "Context: points to the thread, reaction, or follow record",
       },
       type: {
-        type: DataTypes.ENUM("REPLY", "FOLLOW_REQUEST", "FOLLOW_ACCEPT", "LIKE"),
+        type: DataTypes.ENUM("REPLY", "FOLLOW_REQUEST", "FOLLOW_ACCEPT", "LIKE", "SHARE"),
         allowNull: false,
       },
       is_read: {
@@ -54,10 +54,11 @@ module.exports = (sequelize) => {
           name: "idx_recipient_unread",
         },
       ],
-    }
+    },
   );
 
   Notification.associate = (models) => {
+    // User associations
     Notification.belongsTo(models.User, {
       foreignKey: "recipient_id",
       as: "recipient",
@@ -65,6 +66,17 @@ module.exports = (sequelize) => {
     Notification.belongsTo(models.User, {
       foreignKey: "sender_id",
       as: "sender",
+    });
+
+    // Thread associations (for thread-related notifications)
+    Notification.belongsTo(models.Thread, {
+      foreignKey: "target_id",
+      as: "thread",
+      scope: {
+        where: {
+          type: ["REPLY", "LIKE", "SHARE"],
+        },
+      },
     });
   };
 

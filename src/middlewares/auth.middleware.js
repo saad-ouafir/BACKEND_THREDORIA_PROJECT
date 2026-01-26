@@ -8,12 +8,12 @@ class AuthMiddleware {
     const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
 
     if (!token) {
-      return res.status(401).json({ message: "Authentication required" });
+      return res.status(401).json({ message: "User Authentication is required" });
     }
 
     jwt.verify(token, JWT_SECRET, (err, decoded) => {
       if (err) {
-        return res.status(401).json({ message: "Invalid or expired token" });
+        return res.status(401).json({ message: "Authentication failed! Please reload the page" });
       }
 
       req.user = decoded;

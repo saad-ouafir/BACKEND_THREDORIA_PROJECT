@@ -50,11 +50,15 @@ module.exports = (sequelize) => {
           name: "idx_thread_reactions",
         },
       ],
-    }
+    },
   );
 
   Reaction.associate = (models) => {
-    Reaction.belongsTo(models.User, { foreignKey: "user_id", as: "user" });
+    // Basic associations
+    Reaction.belongsTo(models.User, {
+      foreignKey: "user_id",
+      as: "user",
+    });
     Reaction.belongsTo(models.Thread, {
       foreignKey: "thread_id",
       as: "thread",

@@ -45,11 +45,15 @@ module.exports = (sequelize) => {
           name: "idx_thread_media",
         },
       ],
-    }
+    },
   );
 
   Media.associate = (models) => {
-    Media.belongsTo(models.Thread, { foreignKey: "thread_id", as: "thread" });
+    // Basic association
+    Media.belongsTo(models.Thread, {
+      foreignKey: "thread_id",
+      as: "thread",
+    });
   };
 
   return Media;

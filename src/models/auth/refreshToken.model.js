@@ -36,13 +36,13 @@ module.exports = (sequelize) => {
       timestamps: false,
       indexes: [
         {
-          fields: ["expires_at"],
+          fields: ["user_id"],
         },
         {
-          fields: ["token_hash"],
+          fields: ["token_hash", "expires_at"],
         },
       ],
-    }
+    },
   );
 
   RefreshToken.associate = (models) => {

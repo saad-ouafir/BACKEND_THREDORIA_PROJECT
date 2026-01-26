@@ -26,15 +26,18 @@ class UserController {
     // Set refresh token as HTTP-only cookie
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      secure: true,
+      sameSite: "Lax",
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 
     return res.status(201).json({
       message: "User registered successfully",
       user: userDataSanitizer(user),
-      accessToken,
+      accessToken: {
+        token: accessToken,
+        valid_until: Date.now() + 1000 * 60 * 60 * (1 / 2),
+      },
     });
   }
 
@@ -58,15 +61,18 @@ class UserController {
     // Set refresh token as HTTP-only cookie
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      secure: "true",
+      sameSite: "Lax",
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 
     return res.status(200).json({
       message: "Login successful",
       user: userDataSanitizer(user),
-      accessToken,
+      accessToken: {
+        token: accessToken,
+        valid_until: Date.now() + 1000 * 60 * 60 * (1 / 2),
+      },
     });
   }
 
@@ -111,7 +117,10 @@ class UserController {
     const newAccessToken = RefreshTokenController.generateAccessToken(user.id);
 
     return res.status(200).json({
-      accessToken: newAccessToken,
+      accessToken: {
+        token: newAccessToken,
+        valid_until: Date.now() + 1000 * 60 * 60 * (1 / 2),
+      },
       user: userDataSanitizer(user),
     });
   }
@@ -144,7 +153,7 @@ class UserController {
         profile_metadata: profile_metadata !== undefined ? profile_metadata : user.profile_metadata,
         bio: bio !== undefined ? bio : user.bio,
       },
-      { where: { id: parseInt(id) } }
+      { where: { id: parseInt(id) } },
     );
 
     // Fetch the updated user data

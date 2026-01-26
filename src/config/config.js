@@ -2,7 +2,7 @@ const dotenv = require("dotenv").config();
 
 module.exports = {
   APP_PORT: process.env.APP_PORT,
-  FRONTEND_APP_PORT_PORT: process.env.FRONTEND_APP_PORT,
+  FRONTEND_SERVER_URL: process.env.FRONTEND_SERVER_URL,
   DB_HOST: process.env.DB_HOST,
   DB_PORT: process.env.DB_PORT,
   DB_DATABASE: process.env.DB_DATABASE,

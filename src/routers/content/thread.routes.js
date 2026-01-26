@@ -8,6 +8,7 @@ const AuthMiddleware = require("../../middlewares/auth.middleware");
 // router.use(AuthMiddleware.attachUser);
 
 const Thread = wrapController(ThreadController);
+
 router.get("/user/:userId", Thread.getThreadsByUserID);
 router.get("/thread/:threadId", Thread.getThreadById);
 router.get("/subThreads/:parentID", Thread.getSubThreads);

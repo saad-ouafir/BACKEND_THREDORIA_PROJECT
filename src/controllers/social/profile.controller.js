@@ -12,7 +12,7 @@ class ProfileController {
     if (currentUserId) excludeIds.push(currentUserId);
 
     const whereClause = {
-      is_private: false,
+      // is_private: false,
       ...(excludeIds.length && { id: { [Op.notIn]: excludeIds } }),
       ...(cursor && { id: { [Op.lt]: cursor, ...(excludeIds.length && { [Op.notIn]: excludeIds }) } }),
     };

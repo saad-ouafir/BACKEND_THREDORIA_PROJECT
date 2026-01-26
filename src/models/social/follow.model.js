@@ -41,10 +41,11 @@ module.exports = (sequelize) => {
           fields: ["following_id", "status"],
         },
       ],
-    }
+    },
   );
 
   Follow.associate = (models) => {
+    // User associations
     Follow.belongsTo(models.User, {
       foreignKey: "follower_id",
       as: "follower",
