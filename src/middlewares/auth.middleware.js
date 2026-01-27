@@ -22,24 +22,25 @@ class AuthMiddleware {
   };
 
   static async attachUser(req, res, next) {
-    if (!req.user || !req.user.userId) {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+
+    if (!token) {
       return next();
     }
 
     try {
-      const user = await User.findByPk(req.user.userId, {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      const user = await User.findByPk(decoded.userId, {
         attributes: { exclude: ["password_hash"] },
       });
-
-      if (!user) {
-        return res.status(401).json({ message: "User not found" });
+      if (user) {
+        req.currentUser = user;
       }
-
-      req.currentUser = user;
-      next();
     } catch (error) {
-      next(error);
+      // Ignore invalid tokens for optional auth
     }
+    next();
   }
 }
 
