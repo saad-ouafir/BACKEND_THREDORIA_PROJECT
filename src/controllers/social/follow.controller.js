@@ -3,67 +3,55 @@ const { sequelize, User, Follow } = require("../../models");
 const { Op } = require("sequelize");
 const { eventsHandler } = require("../../handlers/eventsHandler");
 class FollowController {
-  // Follow a user
-  static async followUser(req, res) {
+  // Follow/Unfollow a user (toggle)
+  static async toggleFollow(req, res) {
     const { followingId } = req.body;
     const followerId = req.currentUser?.id;
     const userToFollow = await findUser(res, followingId);
 
-    const checkFollowed = await Follow.findAll({
-      where: {
-        [Op.and]: [{ following_id: userToFollow.id }, { follower_id: followerId }],
-      },
-    });
-    if (checkFollowed.length > 0) {
-      return res.status(404).json({ message: "You are already following This User" });
-    }
-
-    const followStatus = userToFollow.is_private ? "PENDING" : "ACCEPTED";
-    await Follow.create({
-      follower_id: followerId,
-      following_id: parseInt(followingId),
-      status: followStatus,
-    });
-
-    // Emit notification event instead of direct creation
-    const eventType = followStatus === "PENDING" ? "follow_request" : "follow_accept";
-    eventsHandler.emit("notification", eventType.toUpperCase(), followerId, followingId, followingId);
-
-    // Update follower/following counts if accepted
-    if (followStatus === "ACCEPTED") {
-      await User.increment("follower_count", { where: { id: followingId } });
-      await User.increment("following_count", { where: { id: followerId } });
-    }
-
-    return res.status(201).json({
-      message: followStatus === "PENDING" ? "Follow request sent to the user !" : "User followed successfully",
-      followStatus,
-    });
-  }
-
-  // Unfollow a user
-  static async unfollowUser(req, res) {
-    const { followingId } = req.params;
-    const followerId = req.user.userId;
-    const follow = await Follow.findOne({
+    const existingFollow = await Follow.findOne({
       where: {
         follower_id: followerId,
         following_id: parseInt(followingId),
       },
     });
-    if (follow.status === "ACCEPTED") {
-      await User.decrement("follower_count", { where: { id: followingId } });
-      await User.decrement("following_count", { where: { id: followerId } });
-    }
 
-    if (follow.status === "PENDING") {
+    if (existingFollow) {
+      // Unfollow logic
+      if (existingFollow.status === "ACCEPTED") {
+        await User.decrement("follower_count", { where: { id: parseInt(followingId) }, by: 1 });
+        await User.decrement("following_count", { where: { id: followerId }, by: 1 });
+      }
       await Follow.destroy({ where: { follower_id: followerId, following_id: parseInt(followingId) } });
-    }
+      return res.status(200).json({
+        message:
+          existingFollow.status === "ACCEPTED" ? "Unfollowed successfully" : "Follow request cancelled successfully",
+        followStatus: null,
+      });
+    } else {
+      // Follow logic
+      const followStatus = userToFollow.is_private ? "PENDING" : "ACCEPTED";
+      await Follow.create({
+        follower_id: followerId,
+        following_id: parseInt(followingId),
+        status: followStatus,
+      });
 
-    await follow.destroy();
-    return res.status(200).json({
-      message: follow.status === "ACCEPTED" ? "Unfollowed successfully" : "Follow request cancelled successfully",
-    });
+      // Emit notification event
+      const eventType = followStatus === "PENDING" ? "follow_request" : "follow_accept";
+      eventsHandler.emit("notification", eventType.toUpperCase(), followerId, followingId, followingId);
+
+      // Update follower/following counts if accepted
+      if (followStatus === "ACCEPTED") {
+        await User.increment("follower_count", { where: { id: parseInt(followingId) } });
+        await User.increment("following_count", { where: { id: followerId } });
+      }
+
+      return res.status(201).json({
+        message: followStatus === "PENDING" ? "Follow request sent to the user !" : "User followed successfully",
+        followStatus,
+      });
+    }
   }
 
   // Get followers of a user
@@ -338,6 +326,42 @@ class FollowController {
 
     return res.status(200).json({
       message: "Follow request rejected Successfully !",
+    });
+  }
+
+  // Remove a follower (current user removes someone from their followers list)
+  static async removeFollower(req, res) {
+    const { followerId } = req.body;
+    const currentUserId = req.currentUser.id;
+
+    const followRecord = await Follow.findOne({
+      where: {
+        follower_id: parseInt(followerId),
+        following_id: currentUserId,
+        status: "ACCEPTED",
+      },
+    });
+
+    if (!followRecord) {
+      return res.status(404).json({
+        success: false,
+        message: "Follower not found",
+      });
+    }
+
+    await Follow.destroy({
+      where: {
+        follower_id: parseInt(followerId),
+        following_id: currentUserId,
+      },
+    });
+
+    // Decrement counts
+    await User.decrement("follower_count", { where: { id: currentUserId }, by: 1 });
+    await User.decrement("following_count", { where: { id: parseInt(followerId) }, by: 1 });
+
+    return res.status(200).json({
+      message: "Follower removed successfully",
     });
   }
 }

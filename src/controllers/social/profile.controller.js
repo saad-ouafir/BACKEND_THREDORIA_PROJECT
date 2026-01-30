@@ -5,7 +5,7 @@ const { userDataSanitizer } = require("../../utils/userDataSanitizer");
 
 class ProfileController {
   static async suggestProfiles(req, res) {
-    const { cursor, exclude } = req.params;
+    const { cursor, exclude, limit = 10 } = req.query;
     const excludeIds = exclude ? exclude.split(",").map(Number) : [];
     const currentUserId = req.currentUser?.id;
 
@@ -19,15 +19,36 @@ class ProfileController {
 
     const users = await User.findAll({
       where: whereClause,
-      limit: parseInt(10),
+      limit: parseInt(limit),
       order: [["id", "DESC"]],
       attributes: ["id", "full_name", "username", "profile_picture_url"],
+      include: [
+        ...(currentUserId
+          ? [
+              {
+                model: Follow,
+                as: "followers",
+                required: false,
+                where: { follower_id: currentUserId },
+                attributes: ["status"],
+              },
+            ]
+          : []),
+      ],
     });
 
-    const nextCursor = users.length === parseInt(10) ? users[users.length - 1].id : null;
+    const nextCursor = users.length === parseInt(limit) ? users[users.length - 1].id : null;
 
     return res.status(200).json({
-      users: users.map((u) => userDataSanitizer(u)),
+      users: users.map((u) => {
+        const userData = u.toJSON();
+        const followStatus = userData.followers?.[0]?.status || null;
+        return {
+          ...userDataSanitizer(userData),
+          isFollowing: followStatus === "ACCEPTED",
+          followStatus,
+        };
+      }),
       nextCursor,
       hasMore: !!nextCursor,
     });
@@ -105,6 +126,8 @@ class ProfileController {
   // Search profiles
   static async searchProfiles(req, res) {
     const { q, limit = 10, offset = 0 } = req.query;
+    const currentUserId = req.currentUser?.id;
+
     const users = await User.findAll({
       where: {
         is_private: false,
@@ -114,11 +137,32 @@ class ProfileController {
       offset: Number(offset),
       order: [["follower_count", "DESC"]],
       attributes: ["id", "full_name", "username", "profile_picture_url", "bio", "follower_count", "following_count"],
+      include: [
+        ...(currentUserId
+          ? [
+              {
+                model: Follow,
+                as: "followers",
+                required: false,
+                where: { follower_id: currentUserId },
+                attributes: ["status"],
+              },
+            ]
+          : []),
+      ],
     });
 
     return res.status(200).json({
       message: "Profiles fetched successfully",
-      users: users.map((u) => userDataSanitizer(u)),
+      users: users.map((u) => {
+        const userData = u.toJSON();
+        const followStatus = userData.followers?.[0]?.status || null;
+        return {
+          ...userDataSanitizer(userData),
+          isFollowing: followStatus === "ACCEPTED",
+          followStatus,
+        };
+      }),
     });
   }
 }

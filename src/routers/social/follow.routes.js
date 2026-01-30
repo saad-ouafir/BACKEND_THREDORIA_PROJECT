@@ -11,8 +11,8 @@ router.use(AuthMiddleware.authenticateToken);
 router.use(AuthMiddleware.attachUser);
 
 // Follow / Unfollow Routes
-router.post("/follow", Follow.followUser);
-router.post("/unfollow", Follow.unfollowUser);
+router.post("/follow", Follow.toggleFollow);
+// router.post("/unfollow", Follow.toggleFollow);
 
 // Get Following / Followers Routes
 router.get("/:userId/followers", Follow.getFollowers);
@@ -22,5 +22,8 @@ router.get("/:userId/following", Follow.getFollowing);
 router.get("/requests", Follow.getFollowRequests);
 router.post("/requests/accept", Follow.acceptFollowRequest);
 router.post("/requests/reject", Follow.rejectFollowRequest);
+
+// Remove a follower
+router.post("/remove-follower", Follow.removeFollower);
 
 module.exports = router;
