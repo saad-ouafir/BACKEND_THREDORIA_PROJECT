@@ -1,12 +1,38 @@
-const { Thread, Media } = require("../../models/index");
+const { Thread, Media, User, Follow } = require("../../models/index");
 const { findThread, findThreads } = require("../../utils/findThread");
 const { Sequelize } = require("sequelize");
+const { findUser } = require("../../utils/findUser");
 class ThreadController {
   static async getThreadsByUserID(req, res) {
     const { userId } = req.params;
     const currentUserId = req.currentUser?.id || null;
+
+    if (parseInt(userId) === currentUserId) {
+      const threads = await findThreads(res, currentUserId, null, null, 10, 0, currentUserId);
+      res.status(200).json({
+        message: "Threads fetched successfully",
+        threads,
+      });
+      return;
+    }
+
+    const user = await findUser(res, userId);
+    if (!user) return;
+
+    if (user.is_private) {
+      if (!currentUserId) {
+        return res.status(200).json({ message: "This profile is private", threads: [], forbidden: true });
+      }
+      const follow = await Follow.findOne({
+        where: { follower_id: currentUserId, following_id: userId, status: "ACCEPTED" },
+      });
+      if (!follow) {
+        return res.status(200).json({ message: "This profile is private", threads: [], forbidden: true });
+      }
+    }
+
     const threads = await findThreads(res, userId, null, null, 10, 0, currentUserId);
-    return res.status(200).json({
+    res.status(200).json({
       message: "Threads fetched successfully",
       threads,
     });

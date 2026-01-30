@@ -3,10 +3,6 @@ const { wrapController } = require("../../middlewares/errorHandler.middleware");
 const ThreadController = require("../../controllers/content/thread.controller");
 const AuthMiddleware = require("../../middlewares/auth.middleware");
 
-// Apply authentication middleware
-// router.use(AuthMiddleware.authenticateToken);
-// router.use(AuthMiddleware.attachUser);
-
 const Thread = wrapController(ThreadController);
 router.use(AuthMiddleware.attachUser);
 

@@ -24,7 +24,7 @@ async function findThreads(
     {
       model: User,
       as: "author",
-      attributes: ["id", "username", "full_name", "profile_picture_url"],
+      attributes: ["id", "username", "full_name", "profile_picture_url", "is_private"],
     },
     {
       model: Media,
@@ -166,7 +166,7 @@ async function findThread(res, threadId, currentUserId = null) {
   const threadData = thread.toJSON();
   threadData.isLiked = thread.reactions && thread.reactions.length > 0;
   if (threadData.replies) {
-    threadData.replies = threadData.replies.map(reply => ({
+    threadData.replies = threadData.replies.map((reply) => ({
       ...reply,
       isLiked: reply.reactions && reply.reactions.length > 0,
     }));

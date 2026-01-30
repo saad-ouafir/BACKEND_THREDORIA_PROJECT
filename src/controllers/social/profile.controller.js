@@ -36,15 +36,25 @@ class ProfileController {
   // Get profile by ID
   static async getProfilebyID(req, res) {
     const { id } = req.params;
+    const currentUserId = req.currentUser?.id;
+
     const user = await User.findByPk(id, {
       attributes: { exclude: ["password_hash", "email"] },
       include: [
-        {
-          model: Thread,
-          as: "threads",
-          limit: 10,
-          order: [["created_at", "DESC"]],
-        },
+        ...(currentUserId
+          ? [
+              {
+                model: Follow,
+                as: "followers",
+                required: false,
+                where: {
+                  follower_id: currentUserId,
+                  following_id: id,
+                },
+                attributes: ["status", "created_at"],
+              },
+            ]
+          : []),
       ],
     });
 
@@ -53,16 +63,42 @@ class ProfileController {
     }
 
     // Check if profile is private and not the owner
-    if (user.is_private && (!req.user || req.user.id !== parseInt(id))) {
+    if (user.is_private && (!req.currentUser || req.currentUser.id !== parseInt(id))) {
+      let followStatus = null;
+      if (currentUserId) {
+        followStatus = user.followers[0]?.status;
+      }
       return res.status(200).json({
         message: "This profile is private",
-        user: userDataSanitizer(user),
+        user: {
+          ...userDataSanitizer(user),
+          isFollowing: followStatus === "ACCEPTED" ? true : false,
+          followStatus: followStatus || null,
+        },
       });
     }
 
+    const followRecordStatus = () => {
+      if (currentUserId && user.followers && user.followers.length > 0) {
+        const followStatus = user.followers[0].status;
+        return {
+          isFollowing: followStatus === "ACCEPTED" ? true : false,
+          followStatus: followStatus || null,
+        };
+      }
+      return {
+        isFollowing: false,
+        followStatus: null,
+      };
+    };
+
     return res.status(200).json({
       message: "Profile fetched successfully",
-      user: userDataSanitizer(user),
+      user: {
+        ...userDataSanitizer(user),
+        isFollowing: followRecordStatus().isFollowing || false,
+        followStatus: followRecordStatus().followStatus || null,
+      },
     });
   }
 

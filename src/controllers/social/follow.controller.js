@@ -107,6 +107,20 @@ class FollowController {
           model: User,
           as: "follower",
           attributes: ["id", "full_name", "username", "profile_picture_url"],
+          // Add follow relationship with current user
+          ...(currentUserId
+            ? [
+                {
+                  model: Follow,
+                  as: "followers",
+                  required: false,
+                  where: {
+                    follower_id: currentUserId,
+                  },
+                  attributes: ["status", "created_at"],
+                },
+              ]
+            : []),
         },
       ],
       limit: parseInt(limit),
@@ -114,9 +128,33 @@ class FollowController {
       order: [["created_at", "DESC"]],
     });
 
+    // Process followers to add follow status
+    const processedFollowers = followers.map((follow) => {
+      const follower = follow.follower.toJSON();
+
+      // Determine follow status
+      let isFollowing = false;
+      let followStatus = null;
+
+      if (currentUserId && follower.followers && follower.followers.length > 0) {
+        const followRecord = follower.followers[0];
+        isFollowing = followRecord.status === "ACCEPTED";
+        followStatus = followRecord.status;
+      }
+
+      // Remove the followers array from the response
+      delete follower.followers;
+
+      return {
+        ...follower,
+        isFollowing,
+        followStatus,
+      };
+    });
+
     return res.status(200).json({
       message: "Followers fetched successfully",
-      followers: followers.map((f) => f.follower),
+      followers: processedFollowers,
     });
   }
 
@@ -170,16 +208,53 @@ class FollowController {
           model: User,
           as: "following",
           attributes: ["id", "full_name", "username", "profile_picture_url"],
+          // Add follow relationship with current user
+          ...(currentUserId
+            ? [
+                {
+                  model: Follow,
+                  as: "followers",
+                  required: false,
+                  where: {
+                    follower_id: currentUserId,
+                  },
+                  attributes: ["status", "created_at"],
+                },
+              ]
+            : []),
         },
       ],
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [["created_at", "DESC"]],
     });
+    // Process following to add follow status
+    const processedFollowing = following.map((follow) => {
+      const followingUser = follow.following.toJSON();
+
+      // Determine follow status
+      let isFollowing = false;
+      let followStatus = null;
+
+      if (currentUserId && followingUser.followers && followingUser.followers.length > 0) {
+        const followRecord = followingUser.followers[0];
+        isFollowing = followRecord.status === "ACCEPTED";
+        followStatus = followRecord.status;
+      }
+
+      // Remove the followers array from the response
+      delete followingUser.followers;
+
+      return {
+        ...followingUser,
+        isFollowing,
+        followStatus,
+      };
+    });
 
     return res.status(200).json({
       message: "Following fetched successfully",
-      following: following.map((f) => f.following),
+      following: processedFollowing,
     });
   }
 
