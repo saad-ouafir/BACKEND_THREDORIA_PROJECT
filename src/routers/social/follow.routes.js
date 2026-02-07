@@ -3,6 +3,18 @@ const FollowController = require("../../controllers/social/follow.controller");
 const { wrapController } = require("../../middlewares/errorHandler.middleware");
 const AuthMiddleware = require("../../middlewares/auth.middleware");
 
+// Import validation middleware and schemas
+const {
+  validateBody,
+  validateParams,
+  validateQuery,
+  toggleFollowSchema,
+  followRequestSchema,
+  removeFollowerSchema,
+  userIdParamSchema,
+  followPaginationSchema,
+} = require("../../validations");
+
 // Wrap Follow class controller for error handling
 const Follow = wrapController(FollowController);
 
@@ -12,7 +24,6 @@ router.use(AuthMiddleware.attachUser);
 
 // Follow / Unfollow Routes
 router.post("/follow", Follow.toggleFollow);
-// router.post("/unfollow", Follow.toggleFollow);
 
 // Get Following / Followers Routes
 router.get("/:userId/followers", Follow.getFollowers);

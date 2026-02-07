@@ -1,17 +1,23 @@
 const { Thread, Media, User, Follow } = require("../../models/index");
-const { findThread, findThreads } = require("../../utils/findThread");
+const { findThread, findThreads, countThreadsByUser } = require("../../utils/findThread");
 const { Sequelize } = require("sequelize");
 const { findUser } = require("../../utils/findUser");
+const { applyPagination, buildPaginationMeta } = require("../../utils/pagination");
+
 class ThreadController {
   static async getThreadsByUserID(req, res) {
     const { userId } = req.params;
     const currentUserId = req.currentUser?.id || null;
+    const { limit, offset, paginationParams } = applyPagination(req.query);
 
     if (parseInt(userId) === currentUserId) {
-      const threads = await findThreads(res, currentUserId, null, null, 10, 0, currentUserId);
+      const threads = await findThreads(res, currentUserId, null, null, limit, offset, currentUserId);
+      const totalCount = await countThreadsByUser(currentUserId);
+
       res.status(200).json({
         message: "Threads fetched successfully",
         threads,
+        pagination: buildPaginationMeta(totalCount, paginationParams.page, paginationParams.limit),
       });
       return;
     }
@@ -31,10 +37,13 @@ class ThreadController {
       }
     }
 
-    const threads = await findThreads(res, userId, null, null, 10, 0, currentUserId);
+    const threads = await findThreads(res, userId, null, null, limit, offset, currentUserId);
+    const totalCount = await countThreadsByUser(userId);
+
     res.status(200).json({
       message: "Threads fetched successfully",
       threads,
+      pagination: buildPaginationMeta(totalCount, paginationParams.page, paginationParams.limit),
     });
   }
 
@@ -42,7 +51,6 @@ class ThreadController {
   static async getSubThreads(req, res) {
     const { parentID } = req.params;
     const currentUserId = req.currentUser?.id || null;
-    console.log(currentUserId);
     const threads = await findThreads(res, null, null, parentID, 10, 0, currentUserId);
     if (threads === null) return; // Error already handled in findThreads
     return res.status(200).json({
@@ -144,25 +152,29 @@ class ThreadController {
   }
 
   static async searchThreads(req, res) {
-    const { search, limit = 20, offset = 0 } = req.query;
+    const { search } = req.query;
+    const { applyPagination, buildPaginationMeta } = require("../../utils/pagination");
+    const { Op } = require("sequelize");
 
     if (!search || !search.trim()) {
       return res.status(400).json({ message: "Search query is required" });
     }
 
+    const { limit, offset, paginationParams } = applyPagination(req.query);
+
     const whereClause = {
       content: {
-        [require("sequelize").Op.iLike]: `%${search.trim()}%`,
+        [Op.like]: `%${search.trim()}%`,
       },
     };
 
-    const threads = await Thread.findAll({
+    const { count, rows: threads } = await Thread.findAndCountAll({
       where: whereClause,
       include: [
         {
           model: require("../../models/index").User,
           as: "author",
-          attributes: ["id", "username", "full_name"],
+          attributes: ["id", "username", "full_name", "profile_picture_url"],
         },
         {
           model: require("../../models/index").Media,
@@ -173,24 +185,31 @@ class ThreadController {
         },
       ],
       order: [["created_at", "DESC"]],
-      limit: parseInt(limit),
-      offset: parseInt(offset),
+      limit,
+      offset,
     });
 
     return res.status(200).json({
       message: "Threads found",
       threads,
-      total: threads.length,
+      pagination: buildPaginationMeta(count, paginationParams.page, paginationParams.limit),
     });
   }
 
   static async suggestThreadByTag(req, res) {
     const currentUserId = req.currentUser?.id;
-    const threads = await findThreads(null, null, null, null, null, null, currentUserId);
+    const { applyPagination, buildPaginationMeta } = require("../../utils/pagination");
+    const { limit, offset, paginationParams } = applyPagination(req.query);
+
+    const threads = await findThreads(null, null, null, null, limit, offset, currentUserId);
+
+    // Get total count for pagination
+    const totalCount = await Thread.count({ where: { parent_id: null } });
 
     return res.status(200).json({
       message: "Trending threads retrieved",
       threads,
+      pagination: buildPaginationMeta(totalCount, paginationParams.page, paginationParams.limit),
     });
   }
 }

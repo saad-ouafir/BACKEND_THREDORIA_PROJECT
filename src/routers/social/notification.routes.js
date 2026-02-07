@@ -11,8 +11,9 @@ router.use(AuthMiddleware.authenticateToken);
 router.use(AuthMiddleware.attachUser);
 
 router.get("/", Notification.getUserNotifications);
-router.put("/read/:notificationId", Notification.markNotificationAsRead);
 router.put("/read/all", Notification.markAllNotificationsAsRead);
+router.put("/read/:notificationId", Notification.markNotificationAsRead);
+router.delete("/all", Notification.deleteAllNotifications);
 router.delete("/:notificationId", Notification.deleteNotifications);
 
 module.exports = router;

@@ -9,6 +9,15 @@ const {
   passwordResetLimiter,
 } = require("../../middlewares/rateLimit.middleware");
 
+// Import validation middleware and schemas
+const {
+  validateBody,
+  registerSchema,
+  loginSchema,
+  updateProfileSchema,
+  resetPasswordSchema,
+} = require("../../validations");
+
 // Wrap controllers with error handling
 const User = wrapController(UserController);
 
@@ -23,7 +32,13 @@ router.use(AuthMiddleware.attachUser);
 
 // Protected Routes
 router.post("/logout", User.logout);
-router.post("/reset-password", authLimiter, passwordResetLimiter, User.resetPassword);
+router.post(
+  "/reset-password",
+  authLimiter,
+  passwordResetLimiter,
+  validateBody(resetPasswordSchema),
+  User.resetPassword,
+);
 router.put("/update", authLimiter, User.update);
 router.delete("/delete", authLimiter, User.delete);
 

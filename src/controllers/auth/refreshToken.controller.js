@@ -47,7 +47,6 @@ class RefreshTokenController {
     console.time("deleteTokens");
     const result = await RefreshToken.destroy({ where: { user_id: userId }, limit: 100 });
     console.timeEnd("deleteTokens");
-    console.log(`Deleted ${result} tokens for user ${userId}`);
     return result;
   }
 }

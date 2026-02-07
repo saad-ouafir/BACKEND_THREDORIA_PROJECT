@@ -9,6 +9,12 @@ class FollowController {
     const followerId = req.currentUser?.id;
     const userToFollow = await findUser(res, followingId);
 
+    if (parseInt(followingId) === parseInt(followerId)) {
+      return res.status(400).json({
+        message: "You can't follow yourself",
+      });
+    }
+
     const existingFollow = await Follow.findOne({
       where: {
         follower_id: followerId,
@@ -277,7 +283,12 @@ class FollowController {
   static async acceptFollowRequest(req, res) {
     const { followerID } = req.body;
     const userId = req.currentUser.id;
-    console.log("follower id", followerID);
+
+    if (followerID === userId) {
+      return res.status(400).json({
+        message: "You can't follow yourself",
+      });
+    }
 
     const followRequest = await Follow.findOne({
       where: {
@@ -305,7 +316,7 @@ class FollowController {
   }
 
   static async rejectFollowRequest(req, res) {
-    const { followerID } = req.params;
+    const { followerID } = req.body;
     const userId = req.currentUser.id;
 
     const followRequest = await Follow.findOne({
@@ -322,7 +333,7 @@ class FollowController {
         message: "Follow request not found",
       });
     }
-    await followRequest.update({ status: "REJECTED" });
+    await followRequest.destroy({ where: { id: followRequest.id } });
 
     return res.status(200).json({
       message: "Follow request rejected Successfully !",

@@ -3,6 +3,19 @@ const { wrapController } = require("../../middlewares/errorHandler.middleware");
 const ThreadController = require("../../controllers/content/thread.controller");
 const AuthMiddleware = require("../../middlewares/auth.middleware");
 
+// Import validation middleware and schemas
+const {
+  validateBody,
+  validateQuery,
+  validateParams,
+  createThreadSchema,
+  searchThreadsSchema,
+  threadIdSchema,
+  userIdSchema,
+  parentIdSchema,
+  paginationSchema,
+} = require("../../validations");
+
 const Thread = wrapController(ThreadController);
 router.use(AuthMiddleware.attachUser);
 

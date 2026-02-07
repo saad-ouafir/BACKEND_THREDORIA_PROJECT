@@ -2,9 +2,9 @@ const NotificationSocket = require("../sockets/notification.socket");
 
 let notificationSocketInstance = null;
 
-const initializeSocket = (server) => {
+const initializeSocket = io => {
   if (!notificationSocketInstance) {
-    notificationSocketInstance = new NotificationSocket(server);
+    notificationSocketInstance = new NotificationSocket(io);
     console.log("Notification socket initialized");
   }
   return notificationSocketInstance;
@@ -12,7 +12,8 @@ const initializeSocket = (server) => {
 
 const getNotificationSocket = () => {
   if (!notificationSocketInstance) {
-    throw new Error("Notification socket not initialized. Call initializeSocket first.");
+    console.warn("Notification socket not initialized. Returning null.");
+    return null;
   }
   return notificationSocketInstance;
 };

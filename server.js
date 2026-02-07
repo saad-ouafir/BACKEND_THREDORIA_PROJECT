@@ -6,13 +6,14 @@ const { Server } = require("socket.io");
 // Import Configuration + Database
 const { APP_PORT, FRONTEND_SERVER_URL } = require("./src/config/config");
 const { connectDataBase } = require("./src/config/database");
+const { initializeSocket } = require("./src/config/socket");
 
 // Global Error Handlers (catches all unhandled promise rejections)
 process.on("unhandledRejection", (reason, promise) => {
   console.error("Unhandled Rejection at:", promise, "reason:", reason);
 });
 
-process.on("uncaughtException", (error) => {
+process.on("uncaughtException", error => {
   console.error("Uncaught Exception:", error);
 });
 
@@ -20,12 +21,15 @@ process.on("uncaughtException", (error) => {
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: FRONTEND_SERVER_URL,
+    origin: "*",
     methods: ["GET", "POST", "PUT", "UPDATE", "DELETE"],
     credentials: true,
   },
 });
 app.set("io", io);
+
+// Initialize WebSocket notification system
+initializeSocket(io);
 
 // Start the HTTP +WebSocket server
 try {

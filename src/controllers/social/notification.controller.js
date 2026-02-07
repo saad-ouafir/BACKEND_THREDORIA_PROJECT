@@ -1,18 +1,21 @@
 const { Notification, User } = require("../../models");
 const { Op } = require("sequelize");
+const { applyPagination, buildPaginationMeta } = require("../../utils/pagination");
 
 class NotificationController {
-  // Get user notifications
+  // Get user notifications with pagination
   static async getUserNotifications(req, res) {
     const userId = req.currentUser.id;
-    // Find and Count all notification with status `unread`
+    const { limit, offset, paginationParams } = applyPagination(req.query);
+
+    // Find and Count all notifications for this user
     const { count, rows } = await Notification.findAndCountAll({
       where: {
-        [Op.and]: {
-          recipient_id: userId,
-        },
+        recipient_id: userId,
       },
       order: [["created_at", "DESC"]],
+      limit,
+      offset,
       include: [
         {
           model: User,
@@ -22,10 +25,19 @@ class NotificationController {
       ],
     });
 
+    // Count only unread notifications
+    const unreadCount = await Notification.count({
+      where: {
+        recipient_id: userId,
+        is_read: false,
+      },
+    });
+
     res.status(200).json({
-      message: "Notification fetched successfully",
+      message: "Notifications fetched successfully",
       notifications: rows,
-      unreadCount: count,
+      unreadCount,
+      pagination: buildPaginationMeta(count, paginationParams.page, paginationParams.limit),
     });
   }
 
@@ -84,15 +96,14 @@ class NotificationController {
     });
   }
 
-  // Delete notification
+  // Delete notification (clears notification only, does not affect follow requests)
   static async deleteNotifications(req, res) {
     const userId = req.currentUser.id;
     const { notificationId } = req.params;
 
-    const notification = await Notification.destroyAll({
+    await Notification.destroy({
       where: {
         id: notificationId,
-        type: { [Op.not]: "FOLLOW_REQUEST" },
         recipient_id: userId,
       },
     });
@@ -102,15 +113,45 @@ class NotificationController {
     });
   }
 
+  // Delete all notifications for the user (clears notifications only, does not affect follow requests)
+  static async deleteAllNotifications(req, res) {
+    const userId = req.currentUser.id;
+
+    const deletedCount = await Notification.destroy({
+      where: {
+        recipient_id: userId,
+      },
+    });
+
+    res.status(200).json({
+      message: "All notifications deleted successfully",
+      deletedCount,
+    });
+  }
+
   // Create Notification (triggered by the eventsHandler)
   static async createNotication(notification_type, sender_id, recipient_id, target_id) {
-    await Notification.create({
+    const notification = await Notification.create({
       type: notification_type,
       sender_id: sender_id,
       recipient_id: recipient_id,
       target_id: target_id,
       created_at: Date.now(),
     });
+
+    // Fetch the notification with sender info for WebSocket
+    const notificationWithSender = await Notification.findOne({
+      where: { id: notification.id },
+      include: [
+        {
+          model: User,
+          as: "sender",
+          attributes: ["id", "username", "full_name", "profile_picture_url"],
+        },
+      ],
+    });
+
+    return notificationWithSender;
   }
 
   // Cancel Notification

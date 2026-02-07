@@ -68,7 +68,7 @@ async function findThreads(
   }
 
   // Add isLiked boolean
-  const addIsLiked = (thread) => {
+  const addIsLiked = thread => {
     const isLiked = thread.reactions && thread.reactions.length > 0;
     return {
       ...thread.toJSON(),
@@ -166,7 +166,7 @@ async function findThread(res, threadId, currentUserId = null) {
   const threadData = thread.toJSON();
   threadData.isLiked = thread.reactions && thread.reactions.length > 0;
   if (threadData.replies) {
-    threadData.replies = threadData.replies.map((reply) => ({
+    threadData.replies = threadData.replies.map(reply => ({
       ...reply,
       isLiked: reply.reactions && reply.reactions.length > 0,
     }));
@@ -175,4 +175,15 @@ async function findThread(res, threadId, currentUserId = null) {
   return threadData;
 }
 
-module.exports = { findThread, findThreads };
+async function countThreadsByUser(userId) {
+  if (!userId) return 0;
+
+  return Thread.count({
+    where: {
+      author_id: userId,
+      parent_id: null, // Only count top-level threads, not replies
+    },
+  });
+}
+
+module.exports = { findThread, findThreads, countThreadsByUser };
