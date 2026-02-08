@@ -16,7 +16,7 @@ async function getSecret(secretName) {
 
 // Config object — env var defaults are used until loadConfig() runs
 const config = {
-  APP_PORT: process.env.APP_PORT || 3000,
+  APP_PORT: process.env.APP_PORT || 5000,
 
   // DB Credentials
   DB_HOST: process.env.DB_HOST || "10.0.3.3",
