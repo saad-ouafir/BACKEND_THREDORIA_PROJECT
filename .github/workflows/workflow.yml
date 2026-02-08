@@ -17,7 +17,7 @@ env:
 
 jobs:
   # Combined Security & Lint Scans (faster than separate jobs)
-  security-lint-scan:
+  RetireJS-ESlint-scan:
     name: Security & Lint Scans
     runs-on: ubuntu-latest
     steps:
@@ -146,7 +146,7 @@ jobs:
   build-and-deploy:
     name: Build and Deploy to GCP
     runs-on: ubuntu-latest
-    needs: [security-lint-scan, snyk-scan, sonarqube-scan]
+    needs: [RetireJS-ESlint-scan, dependency-check, snyk-scan, sonarqube-scan]
     permissions:
       contents: "read"
       id-token: "write"
@@ -159,6 +159,7 @@ jobs:
         name: "Authenticate to Google Cloud"
         uses: "google-github-actions/auth@v2"
         with:
+          token_format: "access_token"
           workload_identity_provider: "projects/945149895844/locations/global/workloadIdentityPools/github-actions-frontend/providers/github-actions-backend"
           service_account: "threadoria-app-service-account@threadoria-app-project-ynov.iam.gserviceaccount.com"
 
