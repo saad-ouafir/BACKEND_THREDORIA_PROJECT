@@ -199,8 +199,12 @@ jobs:
               sudo docker run -d \
                 --name backend-container \
                 -p 5000:5000 \
-                -e DB_PASS='x55UUP@#M99' \
-                --env-file /home/saad/.env \
+                -e DB_PASSWORD='x55UUP@#M99' \
+                -e DB_HOST=10.0.3.3
+                -e DB_PORT=3306
+                -e DB_DATABASE=mysql
+                -e DB_NAME=threadoria
+                -e DB_USER=root
                 --restart always \
                 \$DOCKER_TAG
             "
