@@ -159,7 +159,7 @@ jobs:
         name: "Authenticate to Google Cloud"
         uses: "google-github-actions/auth@v2"
         with:
-          workload_identity_provider: "projects/945149895844/locations/global/workloadIdentityPools/github-actions-frontend/providers/github"
+          workload_identity_provider: "projects/945149895844/locations/global/workloadIdentityPools/github-actions-frontend/providers/github-actions-backend"
           service_account: "threadoria-app-service-account@threadoria-app-project-ynov.iam.gserviceaccount.com"
 
       - name: "Set up Cloud SDK"
