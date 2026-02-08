@@ -159,7 +159,6 @@ jobs:
         name: "Authenticate to Google Cloud"
         uses: "google-github-actions/auth@v2"
         with:
-          token_format: "access_token"
           workload_identity_provider: "projects/945149895844/locations/global/workloadIdentityPools/github-actions-frontend/providers/github-actions-backend"
           service_account: "threadoria-app-service-account@threadoria-app-project-ynov.iam.gserviceaccount.com"
 
@@ -192,9 +191,6 @@ jobs:
             --command="
               sudo gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
               
-              # 1. Fetch the secret from Google Secret Manager on the fly
-              DB_PASSWORD=\$(sudo gcloud secrets versions access latest --secret='DB_PASSWORD')
-              
               sudo docker stop backend-container || true
               sudo docker rm backend-container || true
               sudo docker pull $DOCKER_TAG
@@ -203,7 +199,7 @@ jobs:
               sudo docker run -d \
                 --name backend-container \
                 -p 5000:5000 \
-                -e DB_PASS=\"\$DB_PASSWORD\" \
+                -e DB_PASS='x55UUP@#M99' \
                 --env-file /home/saad/.env \
                 --restart always \
                 \$DOCKER_TAG
