@@ -159,6 +159,8 @@ jobs:
         name: "Authenticate to Google Cloud"
         uses: "google-github-actions/auth@v2"
         with:
+          # --- ADD THIS: Request an access token ---
+          token_format: "access_token"
           workload_identity_provider: "projects/945149895844/locations/global/workloadIdentityPools/github-actions-frontend/providers/github-actions-backend"
           service_account: "threadoria-app-service-account@threadoria-app-project-ynov.iam.gserviceaccount.com"
 
@@ -166,7 +168,9 @@ jobs:
         uses: "google-github-actions/setup-gcloud@v2"
 
       - name: "Docker Auth"
-        run: gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
+        # --- FIXED: Direct login using the token instead of gcloud helper ---
+        run: |
+          echo "${{ steps.auth.outputs.access_token }}" | docker login -u oauth2accesstoken --password-stdin https://${{ env.GAR_LOCATION }}-docker.pkg.dev
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -190,21 +194,21 @@ jobs:
             --tunnel-through-iap \
             --command="
               sudo gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
-              
+            
               sudo docker stop backend-container || true
               sudo docker rm backend-container || true
               sudo docker pull $DOCKER_TAG
-              
-              # 2. Inject the secret and the host-level .env into the container
+            
+              # --- FIXED: Added backslashes for multi-line command ---
               sudo docker run -d \
                 --name backend-container \
                 -p 5000:5000 \
                 -e DB_PASSWORD='x55UUP@#M99' \
-                -e DB_HOST=10.0.3.3
-                -e DB_PORT=3306
-                -e DB_DATABASE=mysql
-                -e DB_NAME=threadoria
-                -e DB_USER=root
+                -e DB_HOST=10.0.3.3 \
+                -e DB_PORT=3306 \
+                -e DB_DATABASE=mysql \
+                -e DB_NAME=threadoria \
+                -e DB_USER=root \
                 --restart always \
                 \$DOCKER_TAG
             "
