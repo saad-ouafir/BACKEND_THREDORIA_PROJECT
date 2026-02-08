@@ -20,45 +20,27 @@ const config = {
 };
 
 // Fetch secrets from GCP Secret Manager and update config
+// Optimized loadConfig for individual secrets
 async function loadConfig() {
-  // Skip Secret Manager if no project ID (local development)
-  if (!config.GCP_PROJECT_ID) {
-    console.log("GCP_PROJECT_ID not set — using environment variables only.");
-    return;
-  }
+  if (!config.GCP_PROJECT_ID) return;
 
-  try {
-    const client = new SecretManagerServiceClient();
+  const client = new SecretManagerServiceClient();
+  const secretsToLoad = ["DB_PASSWORD", "JWT_SECRET"];
 
-    // Fetch DB_PASSWORD
-    if (!config.DB_PASSWORD) {
-      try {
-        const [version] = await client.accessSecretVersion({
-          name: `projects/${config.GCP_PROJECT_ID}/secrets/DB_PASSWORD/versions/latest`,
-        });
-        config.DB_PASSWORD = version.payload.data.toString();
-      } catch (err) {
-        console.warn("Could not fetch DB_PASSWORD from Secret Manager:", err.message);
-      }
+  for (const secretName of secretsToLoad) {
+    try {
+      const [version] = await client.accessSecretVersion({
+        name: `projects/${config.GCP_PROJECT_ID}/secrets/${secretName}/versions/latest`,
+      });
+      config[secretName] = version.payload.data.toString().trim();
+    } catch (err) {
+      console.warn(`Could not fetch ${secretName}:`, err.message);
     }
-
-    // Fetch JWT_SECRET
-    if (!config.JWT_SECRET) {
-      try {
-        const [version] = await client.accessSecretVersion({
-          name: `projects/${config.GCP_PROJECT_ID}/secrets/JWT_SECRET/versions/latest`,
-        });
-        config.JWT_SECRET = version.payload.data.toString();
-      } catch (err) {
-        console.warn("Could not fetch JWT_SECRET from Secret Manager:", err.message);
-      }
-    }
-
-    console.log("Configuration loaded from GCP Secret Manager.");
-  } catch (err) {
-    console.error("Failed to initialize Secret Manager client:", err.message);
   }
 }
 
+// Run loadConfig immediately and export the promise
+const configReady = loadConfig();
+
 module.exports = config;
-module.exports.loadConfig = loadConfig;
+module.exports.configReady = configReady;

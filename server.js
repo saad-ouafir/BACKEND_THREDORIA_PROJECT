@@ -1,4 +1,4 @@
-const { loadConfig } = require("./src/config/config");
+const { configReady } = require("./src/config/config");
 
 // Global Error Handlers (catches all unhandled promise rejections)
 process.on("unhandledRejection", (reason, promise) => {
@@ -11,8 +11,8 @@ process.on("uncaughtException", error => {
 
 // Bootstrap the server
 async function start() {
-  // 1. Load secrets from GCP Secret Manager (if available)
-  await loadConfig();
+  // 1. Wait for secrets to load from GCP Secret Manager
+  await configReady;
 
   // 2. Now import modules that depend on config values
   const app = require("./src/app");

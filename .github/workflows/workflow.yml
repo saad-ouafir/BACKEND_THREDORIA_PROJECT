@@ -159,7 +159,6 @@ jobs:
         name: "Authenticate to Google Cloud"
         uses: "google-github-actions/auth@v2"
         with:
-          # --- ADD THIS: Request an access token ---
           token_format: "access_token"
           workload_identity_provider: "projects/945149895844/locations/global/workloadIdentityPools/github-actions-frontend/providers/github-actions-backend"
           service_account: "threadoria-app-service-account@threadoria-app-project-ynov.iam.gserviceaccount.com"
@@ -168,7 +167,6 @@ jobs:
         uses: "google-github-actions/setup-gcloud@v2"
 
       - name: "Docker Auth"
-        # --- FIXED: Direct login using the token instead of gcloud helper ---
         run: |
           echo "${{ steps.auth.outputs.access_token }}" | docker login -u oauth2accesstoken --password-stdin https://${{ env.GAR_LOCATION }}-docker.pkg.dev
 
@@ -195,22 +193,19 @@ jobs:
             --command="
               sudo gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
               
-              # 1. Fetch ALL secrets from Secret Manager
-              # Make sure these names match exactly what you have in GCP Secret Manager
-              DB_PASSWORD=\$(sudo gcloud secrets versions access latest --secret='DB_PASSWORD')
-              JWT_SECRET=\$(sudo gcloud secrets versions access latest --secret='JWT_SECRET')
-              
               sudo docker stop backend-container || true
               sudo docker rm backend-container || true
               sudo docker pull $DOCKER_TAG
               
-              # 2. Inject them into the docker run command
+              # --- CLEANER DOCKER RUN ---
+              # We only pass the Project ID. The Node.js app handles the rest.
+              # Note: Port mapping 5000:5000 assumes your app now listens on 5000.
               sudo docker run -d \
                 --name backend-container \
-                -p 5000:3000 \
-                -e DB_PASSWORD=\"\$DB_PASSWORD\" \
-                -e JWT_SECRET=\"\$JWT_SECRET\" \
-                -e PORT=3000 \
+                -p 5000:5000 \
+                -e GCP_PROJECT_ID='threadoria-app-project-ynov' \
+                -e GCP_BUCKET_NAME='threadoria-app-bucket' \
+                -e PORT=5000 \
                 --env-file /home/saad/.env \
                 --restart always \
                 $DOCKER_TAG
