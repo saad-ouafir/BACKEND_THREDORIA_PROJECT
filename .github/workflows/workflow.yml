@@ -186,29 +186,33 @@ jobs:
 
       - name: "SSH and Restart Container"
         run: |
+          # Define the tag locally in the runner
           DOCKER_TAG="${{ env.GAR_LOCATION }}-docker.pkg.dev/threadoria-app-project-ynov/${{ env.REPOSITORY }}/${{ env.IMAGE }}:latest"
 
+          # Use a heredoc (EOF) to send the multi-line command clearly
           gcloud compute ssh ${{ env.VM_NAME }} \
             --project=threadoria-app-project-ynov \
             --zone=${{ env.ZONE }} \
             --tunnel-through-iap \
             --command="
               sudo gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
-            
+              
               sudo docker stop backend-container || true
               sudo docker rm backend-container || true
+              
+              # Pull the new image
               sudo docker pull $DOCKER_TAG
-            
-              # --- FIXED: Added backslashes for multi-line command ---
+              
+              # Run the container with all variables on one line to be safe
               sudo docker run -d \
                 --name backend-container \
                 -p 5000:5000 \
                 -e DB_PASSWORD='x55UUP@#M99' \
-                -e DB_HOST=10.0.3.3 \
+                -e DB_HOST='10.0.3.3' \
                 -e DB_PORT=3306 \
-                -e DB_DATABASE=mysql \
-                -e DB_NAME=threadoria \
-                -e DB_USER=root \
+                -e DB_DATABASE='mysql' \
+                -e DB_NAME='threadoria' \
+                -e DB_USER='root' \
                 --restart always \
-                \$DOCKER_TAG
+                $DOCKER_TAG
             "
