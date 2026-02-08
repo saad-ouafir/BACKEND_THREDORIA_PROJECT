@@ -15,7 +15,7 @@ const config = {
   JWT_SECRET: process.env.JWT_SECRET || "",
 
   // GCP
-  GCP_PROJECT_ID: process.env.GCP_PROJECT_ID || "",
+  GCP_PROJECT_ID: process.env.GCP_PROJECT_ID,
   GCP_BUCKET_NAME: process.env.GCP_BUCKET_NAME || "threadoria-app-bucket",
 };
 

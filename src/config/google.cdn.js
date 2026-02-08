@@ -34,7 +34,6 @@ const storage = new Storage({
   },
 });
 
-console.log(config.GCP_BUCKET_NAME);
 const bucket = storage.bucket(config.GCP_BUCKET_NAME);
 
 module.exports = {

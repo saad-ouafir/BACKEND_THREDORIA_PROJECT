@@ -197,9 +197,7 @@ jobs:
               sudo docker rm backend-container || true
               sudo docker pull $DOCKER_TAG
               
-              # --- CLEANER DOCKER RUN ---
-              # We only pass the Project ID. The Node.js app handles the rest.
-              # Note: Port mapping 5000:5000 assumes your app now listens on 5000.
+              # Container running and port mapping
               sudo docker run -d \
                 --name backend-container \
                 -p 5000:5000 \
