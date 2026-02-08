@@ -30,6 +30,7 @@ const config = {
 
   // GCP
   GCP_PROJECT_ID: process.env.GCP_PROJECT_ID,
+  GCP_BUCKET_NAME: process.env.GCP_BUCKET_NAME,
 };
 
 // Fetch secrets from GCP and override config values
