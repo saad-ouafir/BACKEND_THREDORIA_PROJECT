@@ -1,12 +1,4 @@
-// import app after applying middlewares + Needed Modules
-const app = require("./src/app");
-const http = require("http");
-const { Server } = require("socket.io");
-
-// Import Configuration + Database
-const { APP_PORT } = require("./src/config/config");
-const { connectDataBase } = require("./src/config/database");
-const { initializeSocket } = require("./src/config/socket");
+const { loadConfig } = require("./src/config/config");
 
 // Global Error Handlers (catches all unhandled promise rejections)
 process.on("unhandledRejection", (reason, promise) => {
@@ -17,25 +9,40 @@ process.on("uncaughtException", error => {
   console.error("Uncaught Exception:", error);
 });
 
-// WebSocket + HTTP server configuration
-const httpServer = http.createServer(app);
-const io = new Server(httpServer, {
-  cors: {
-    origin: ["https://threadoria.app", "https://www.threadoria.app"],
-    methods: ["GET", "POST", "PUT", "UPDATE", "DELETE"],
-    credentials: true,
-  },
-});
-app.set("io", io);
+// Bootstrap the server
+async function start() {
+  // 1. Load secrets from GCP Secret Manager (if available)
+  await loadConfig();
 
-// Initialize WebSocket notification system
-initializeSocket(io);
+  // 2. Now import modules that depend on config values
+  const app = require("./src/app");
+  const http = require("http");
+  const { Server } = require("socket.io");
+  const { APP_PORT } = require("./src/config/config");
+  const { connectDataBase } = require("./src/config/database");
+  const { initializeSocket } = require("./src/config/socket");
 
-// Start the HTTP +WebSocket server
-try {
+  // 3. WebSocket + HTTP server configuration
+  const httpServer = http.createServer(app);
+  const io = new Server(httpServer, {
+    cors: {
+      origin: ["https://threadoria.app", "https://www.threadoria.app"],
+      methods: ["GET", "POST", "PUT", "UPDATE", "DELETE"],
+      credentials: true,
+    },
+  });
+  app.set("io", io);
+
+  // Initialize WebSocket notification system
+  initializeSocket(io);
+
+  // 4. Start the HTTP + WebSocket server
+  await connectDataBase();
   httpServer.listen(APP_PORT);
-  connectDataBase();
   console.log(`Server running on port ${APP_PORT}`);
-} catch (error) {
-  console.error("Failed to start server:", error);
 }
+
+start().catch(error => {
+  console.error("Failed to start server:", error);
+  process.exit(1);
+});

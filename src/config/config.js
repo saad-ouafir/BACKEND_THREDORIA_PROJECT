@@ -1,20 +1,6 @@
 const { SecretManagerServiceClient } = require("@google-cloud/secret-manager");
-const client = new SecretManagerServiceClient();
 
-// Fetch a secret from GCP Secret Manager
-async function getSecret(secretName) {
-  try {
-    const [version] = await client.accessSecretVersion({
-      name: `projects/${process.env.GCP_PROJECT_ID}/secrets/${secretName}/versions/latest`,
-    });
-    return version.payload.data.toString();
-  } catch (err) {
-    console.error(`Error fetching secret ${secretName}:`, err);
-    return null;
-  }
-}
-
-// Config object — env var defaults are used until loadConfig() runs
+// Config object with defaults for local development
 const config = {
   APP_PORT: process.env.APP_PORT || 5000,
 
@@ -23,23 +9,55 @@ const config = {
   DB_USER: process.env.DB_USER || "root",
   DB_PORT: process.env.DB_PORT || 3306,
   DB_NAME: process.env.DB_NAME || "threadoria",
-  DB_PASSWORD: process.env.DB_PASSWORD,
+  DB_PASSWORD: process.env.DB_PASSWORD || "",
 
   // Auth
   JWT_SECRET: process.env.JWT_SECRET || "",
 
   // GCP
-  GCP_PROJECT_ID: process.env.GCP_PROJECT_ID,
+  GCP_PROJECT_ID: process.env.GCP_PROJECT_ID || "",
   GCP_BUCKET_NAME: process.env.GCP_BUCKET_NAME || "threadoria-app-bucket",
 };
 
-// Fetch secrets from GCP and override config values
+// Fetch secrets from GCP Secret Manager and update config
 async function loadConfig() {
-  const dbPassword = await getSecret("DB_PASSWORD");
-  if (dbPassword) config.DB_PASSWORD = dbPassword;
+  // Skip Secret Manager if no project ID (local development)
+  if (!config.GCP_PROJECT_ID) {
+    console.log("GCP_PROJECT_ID not set — using environment variables only.");
+    return;
+  }
 
-  const jwtSecret = await getSecret("JWT_SECRET");
-  if (jwtSecret) config.JWT_SECRET = jwtSecret;
+  try {
+    const client = new SecretManagerServiceClient();
+
+    // Fetch DB_PASSWORD
+    if (!config.DB_PASSWORD) {
+      try {
+        const [version] = await client.accessSecretVersion({
+          name: `projects/${config.GCP_PROJECT_ID}/secrets/DB_PASSWORD/versions/latest`,
+        });
+        config.DB_PASSWORD = version.payload.data.toString();
+      } catch (err) {
+        console.warn("Could not fetch DB_PASSWORD from Secret Manager:", err.message);
+      }
+    }
+
+    // Fetch JWT_SECRET
+    if (!config.JWT_SECRET) {
+      try {
+        const [version] = await client.accessSecretVersion({
+          name: `projects/${config.GCP_PROJECT_ID}/secrets/JWT_SECRET/versions/latest`,
+        });
+        config.JWT_SECRET = version.payload.data.toString();
+      } catch (err) {
+        console.warn("Could not fetch JWT_SECRET from Secret Manager:", err.message);
+      }
+    }
+
+    console.log("Configuration loaded from GCP Secret Manager.");
+  } catch (err) {
+    console.error("Failed to initialize Secret Manager client:", err.message);
+  }
 }
 
 module.exports = config;
