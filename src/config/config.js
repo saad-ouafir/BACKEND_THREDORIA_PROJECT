@@ -23,14 +23,14 @@ const config = {
   DB_USER: process.env.DB_USER || "root",
   DB_PORT: process.env.DB_PORT || 3306,
   DB_NAME: process.env.DB_NAME || "threadoria",
-  DB_PASSWORD: process.env.DB_PASSWORD || "",
+  DB_PASSWORD: process.env.DB_PASSWORD,
 
   // Auth
   JWT_SECRET: process.env.JWT_SECRET || "",
 
   // GCP
   GCP_PROJECT_ID: process.env.GCP_PROJECT_ID,
-  GCP_BUCKET_NAME: process.env.GCP_BUCKET_NAME,
+  GCP_BUCKET_NAME: process.env.GCP_BUCKET_NAME || "threadoria-app-bucket",
 };
 
 // Fetch secrets from GCP and override config values
@@ -40,8 +40,6 @@ async function loadConfig() {
 
   const jwtSecret = await getSecret("JWT_SECRET");
   if (jwtSecret) config.JWT_SECRET = jwtSecret;
-
-  console.log("Configuration loaded (secrets fetched from GCP Secret Manager).");
 }
 
 module.exports = config;
