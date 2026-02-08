@@ -18,7 +18,7 @@ const router = require("./routers/index");
 app.use(helmet());
 app.use(
   cors({
-    origin: "*",
+    origin: ["https://threadoria.app", "https://www.threadoria.app"],
     methods: ["GET", "POST", "PUT", "UPDATE", "DELETE"],
     credentials: true,
   }),

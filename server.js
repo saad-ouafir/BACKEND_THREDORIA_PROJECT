@@ -21,7 +21,7 @@ process.on("uncaughtException", error => {
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "*",
+    origin: ["https://threadoria.app", "https://www.threadoria.app"],
     methods: ["GET", "POST", "PUT", "UPDATE", "DELETE"],
     credentials: true,
   },
