@@ -4,7 +4,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 
 // Import Configuration + Database
-const { APP_PORT, FRONTEND_SERVER_URL } = require("./src/config/config");
+const { APP_PORT } = require("./src/config/config");
 const { connectDataBase } = require("./src/config/database");
 const { initializeSocket } = require("./src/config/socket");
 
